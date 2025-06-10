@@ -2,14 +2,28 @@ import requests
 from bs4 import BeautifulSoup
 
 def main():
-    url = "https://www.google.com/"
-    data = requests.get(url)
+    open_set = set(["https://en.wikipedia.org/wiki/Main_Page"])
+    close_set = set()
 
-    soup = BeautifulSoup(data.text, "html.parser")
+    while open_set:
+        curr_url = open_set.pop()
+        close_set.add(curr_url)
 
-    links = soup.find_all("a")
+        request_info = requests.get(curr_url)
 
-    for link in links:
-        print(link.href)
+        soup = BeautifulSoup(request_info.text, "html.parser")
+
+        links = soup.find_all("a")
+
+        for link in links:
+            url = link.get("href")
+            if url in open_set:
+                continue
+            if url in close_set:
+                continue
+
+            if url and url.startswith("http"):
+                open_set.add(url)
+                print(url)
 
 main()
