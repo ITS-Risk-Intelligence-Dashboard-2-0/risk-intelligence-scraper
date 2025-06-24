@@ -1,29 +1,42 @@
 import requests
 from bs4 import BeautifulSoup
+from urllib.parse import urljoin, urlparse
+import json
+
+news_articles = set()
+
+def news_crawler(hub, news_paths, fullpath=False):
+
+    google_news_req = requests.get(hub)
+
+    soup = BeautifulSoup(google_news_req.text, "html.parser")
+
+    anchors = soup.find_all("a")
+
+    for anchor in anchors:
+        if not anchor.has_attr("href"):
+            continue
+
+        url = anchor.get("href")
+
+        for path in news_paths:
+            if urlparse(url).path.startswith(path):
+                if fullpath:
+                    full_url = urljoin(hub, urlparse(url).path)
+                    news_articles.add(full_url)
+                else:
+                    full_url = urljoin(hub, url)
+                    news_articles.add(full_url)
 
 def main():
-    open_set = set(["https://en.wikipedia.org/wiki/Main_Page"])
-    close_set = set()
+    with open("crawlerconfig.json", "r") as f:
+        data = json.load(f)
 
-    while open_set:
-        curr_url = open_set.pop()
-        close_set.add(curr_url)
+        for hub in data:
+            news_crawler(hub["url"], hub["paths"], hub["fullpath"])
 
-        request_info = requests.get(curr_url)
-
-        soup = BeautifulSoup(request_info.text, "html.parser")
-
-        links = soup.find_all("a")
-
-        for link in links:
-            url = link.get("href")
-            if url in open_set:
-                continue
-            if url in close_set:
-                continue
-
-            if url and url.startswith("http"):
-                open_set.add(url)
-                print(url)
+    for article in news_articles:
+        # push to celery job
+        print(article)
 
 main()

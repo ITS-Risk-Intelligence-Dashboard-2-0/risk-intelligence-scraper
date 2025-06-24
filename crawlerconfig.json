@@ -1,0 +1,12 @@
+[
+	{
+		"url": "https://www.cnn.com/",
+		"paths": ["/2025/06/23/politics/", "/2025/06/23/us/"],
+		"fullpath": false
+	},
+	{
+		"url": "https://www.foxnews.com/",
+		"paths": ["/media/"],
+		"fullpath": true
+	}
+]
