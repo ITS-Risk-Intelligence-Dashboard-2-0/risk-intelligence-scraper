@@ -22,7 +22,7 @@ async def generate_pdf_task(url):
     
     await page.goto(url)
     
-    pdf_path = f"../gdrive/{title}.pdf" 
+    pdf_path = f"../gdrive/saved_sites/{title}.pdf" 
     
     await page.pdf({'path': pdf_path, 'format': 'A4'})
     
