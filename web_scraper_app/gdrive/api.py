@@ -5,7 +5,7 @@ from googleapiclient.http import MediaFileUpload
 from googleapiclient.errors import HttpError
 
 # --- Configuration ---
-SERVICE_ACCOUNT_FILE = 'path/to/your/service-account-key.json'
+SERVICE_ACCOUNT_FILE = '/Users/hrychen/Desktop/Google API/risk-intel-db-f19a1b90a785.json'
 FOLDER_ID = '1-3cTCANoUdWEc-jTArx1Kpzy9cpmA5ad'
 SCOPES = ['https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/drive.metadata.readonly']
 # Added drive.metadata.readonly scope for listing purposes
