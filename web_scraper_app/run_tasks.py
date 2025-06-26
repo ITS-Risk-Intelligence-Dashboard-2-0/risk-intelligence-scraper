@@ -1,6 +1,6 @@
-from ..celery import app
-from ..crawler.tasks import scrape_google_links
-from ..scraper.tasks import generate_pdf_task
+from web_scraper_app.celery import app
+from web_scraper_app.crawler.tasks import scrape_google_links
+from web_scraper_app.scraper.tasks import generate_pdf_task
 import time
 
 if __name__ == '__main__':
