@@ -17,6 +17,19 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
 
-CELERY_BEAT_SCHEDULE = {
-    'define task here'
+# DJANGO CELERY BEAT
+# Settings to allow 'django-celery-beat' to run migrations.
+
+SECRET_KEY = "dummy-secret-key-for-migrations"
+
+INSTALLED_APPS = (
+    'django_celery_beat',
+)
+
+# Configure the database connection using the DATABASE_URL from the .env file
+import os
+import dj_database_url
+
+DATABASES = {
+    'default': dj_database_url.config(default=os.environ.get('DATABASE_URL'))
 }
