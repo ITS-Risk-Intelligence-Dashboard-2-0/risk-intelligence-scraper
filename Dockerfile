@@ -1,8 +1,7 @@
-FROM ubuntu:22.04
-RUN apt-get update && \
-    apt-get install -y python3 python3-pip --no-install-recommends && \
-    rm -rf /var/lib/apt/lists/*
+FROM python:3.10-slim
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
 WORKDIR /app
-COPY requirements.txt /tmp/requirements.txt
-RUN pip3 install -r /tmp/requirements.txt
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
