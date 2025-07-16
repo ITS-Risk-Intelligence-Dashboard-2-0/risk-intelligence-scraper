@@ -4,8 +4,10 @@
 # This is how autodiscover_tasks() knows where to look.
 # Add your app modules here.
 CELERY_IMPORTS = [
-    'web_scraper_app.crawler.tasks',
-    'web_scraper_app.scraper.tasks',
+    'web_scraper_app.run_tasks',
+    'web_scraper_app.scraper.crawler',
+    'web_scraper_app.scraper.filter',
+    'web_scraper_app.scraper.retrieval',
 ]
 
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
