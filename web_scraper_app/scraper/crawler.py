@@ -2,6 +2,10 @@ from celery import shared_task
 import requests
 from bs4 import BeautifulSoup
 from web_scraper_app.scraper.filter import filter_scraped_urls
+from urllib.parse import urlparse, urlunparse
+
+def build_url(current_url, scraped_url):
+    return urlunparse(("https", current_url.netloc, scraped_url.path, '', '', ''))
 
 def same_domain(netloc1, netloc2):
     if netloc1 == '' or netloc2 == '':
@@ -50,6 +54,7 @@ def scrape_google_links():
 
     sources = set(source_hubs)
 
+    results = []
     while len(sources) > 0:
         curr_source = sources.pop()
 
@@ -62,9 +67,9 @@ def scrape_google_links():
 
         parsed_html = BeautifulSoup(response.text, "html.parser")
 
-        anchor_tags = soup.find_all("a")
+        anchor_tags = parsed_html.find_all("a")
 
-        for anchor in anchors:
+        for anchor in anchor_tags:
             if not anchor.has_attr("href"):
                 continue
 

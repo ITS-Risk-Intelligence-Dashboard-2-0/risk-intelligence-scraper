@@ -1,15 +1,17 @@
 from web_scraper_app.celery import app
-from web_scraper_app.crawler.tasks import scrape_google_links
-from web_scraper_app.scraper.tasks import generate_pdf_task
+from web_scraper_app.scraper.crawler import scrape_google_links
 import time
 
-if __name__ == '__main__':
+#if __name__ == '__main__':
+@app.task
+def main():
     print("Scraping Google links...")
-    urls = scrape_google_links()
+    urls = scrape_google_links.delay()
 
-    print(f"Found {len(urls)} URLs. Dispatching tasks...")
+    #print(f"Found {len(urls)} URLs. Dispatching tasks...")
+    print("completed?")
 
-    tasks_to_monitor = []
+    """tasks_to_monitor = []
     task_start_times = {}
     for idx, url in enumerate(urls):
         result = generate_pdf_task.delay(url)
@@ -39,7 +41,8 @@ if __name__ == '__main__':
                 # Remove the completed task from the monitoring list
                 tasks_to_monitor.remove((task_name, task_obj))
 
-        time.sleep(0.5)
+        time.sleep(0.5)"""
 
     print("\nAll tasks have completed.")
 
+main()
