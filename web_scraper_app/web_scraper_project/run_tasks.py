@@ -1,4 +1,4 @@
-from web_scraper_app.celery import app
+from web_scraper_app.web_scraper_project.celery import app
 from web_scraper_app.scraper.crawler import scrape_google_links
 import time
 
