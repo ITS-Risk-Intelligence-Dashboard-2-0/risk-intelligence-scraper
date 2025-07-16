@@ -9,7 +9,6 @@ from sqlalchemy.ext.declarative import declarative_base # Deprecated in SQLAlche
 Base = declarative_base() # Base of all sqlalchemy models
 
 # No ConfigEnvironment enum needed if environments are not explicitly managed
-
 # Simplified AppConfig for a key-value store
 class AppConfig(Base):
     __tablename__ = "app_configs" # You can rename this to match your existing table if desired

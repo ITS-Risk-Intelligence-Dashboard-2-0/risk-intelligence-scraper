@@ -1,4 +1,4 @@
-# admin.py - Adjusted for a simple key-value table
+# admin.py - Adjusted for a simple key-value table 
 import json
 import yaml
 from sqladmin import Admin, ModelView
@@ -18,7 +18,6 @@ from model import AppConfig, AdminUser # ConfigEnvironment is no longer needed f
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # --- AdminUser Authentication Helpers (remain the same) ---
-
 async def get_admin_user_by_username(session: AsyncSession, username: str):
     """Retrieves an AdminUser by username."""
     result = await session.execute(select(AdminUser).where(AdminUser.username == username))
