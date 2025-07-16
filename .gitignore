@@ -1,0 +1,45 @@
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments (ignore your venv folder)
+venv/
+backend/venv/
+# or if you have multiple venv folders, just ignore any venv folders:
+**/venv/
+
+# Environment variable files (often store secrets here)
+.env
+.env.*
+
+# Database files if any local SQLite (if used)
+*.db
+*.sqlite3
+
+# IDE/editor specific files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Mac OS system files
+.DS_Store
+
+# Logs
+*.log
+
+# Python test cache
+.pytest_cache/
+
+# Coverage reports
+htmlcov/
+.coverage
+
+# Streamlit specific (cache, temp files)
+.streamlit/
+
+# Other
+*.egg-info/
+dist/
+build/
