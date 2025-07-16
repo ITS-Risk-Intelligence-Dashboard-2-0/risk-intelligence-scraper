@@ -1,9 +1,9 @@
 import os
 from celery import Celery
 
-app = Celery('web_scraper_app')
+app = Celery('web_scraper_project')
 
-app.config_from_object('web_scraper_app.settings', namespace='CELERY')
+app.config_from_object('web_scraper_project.settings', namespace='CELERY')
 
 app.autodiscover_tasks()
 

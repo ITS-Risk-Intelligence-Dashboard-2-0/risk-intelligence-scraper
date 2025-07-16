@@ -1,7 +1,7 @@
 from celery import shared_task
 import requests
 from bs4 import BeautifulSoup
-from web_scraper_app.scraper.filter import filter_scraped_urls
+from scraper.filter import filter_scraped_urls
 from urllib.parse import urlparse, urlunparse
 
 def build_url(current_url, scraped_url):

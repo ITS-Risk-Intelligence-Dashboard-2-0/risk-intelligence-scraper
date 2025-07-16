@@ -1,5 +1,5 @@
-from web_scraper_app.web_scraper_project.celery import app
-from web_scraper_app.scraper.crawler import scrape_google_links
+from web_scraper_project.celery import app
+from scraper.crawler import scrape_google_links
 import time
 
 #if __name__ == '__main__':
