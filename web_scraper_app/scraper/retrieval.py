@@ -1,10 +1,10 @@
 from bs4 import BeautifulSoup
-# from celery import shared_task
+from celery import shared_task
 import asyncio
 from pyppeteer import launch
 import requests
 
-# @shared_task
+@shared_task
 async def generate_pdf_task(url):
     response = requests.get(url).text
 
@@ -33,10 +33,10 @@ async def generate_pdf_task(url):
     return pdf_path
 
 
-def main():
-    asyncio.get_event_loop().run_until_complete(generate_pdf_task('https://apitemplate.io/blog/how-to-convert-html-to-pdf-using-python/'))
+#def main():
+    #asyncio.get_event_loop().run_until_complete(generate_pdf_task('https://apitemplate.io/blog/how-to-convert-html-to-pdf-using-python/'))
 
-main()
+#main()
 """
 import asyncio
 from pyppeteer import launch
