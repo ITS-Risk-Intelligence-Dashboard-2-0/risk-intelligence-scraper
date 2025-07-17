@@ -1,0 +1,40 @@
+# .gitignore
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+*.env # Ignore .env files
+.pytest_cache/
+.coverage
+.ipynb_checkpoints/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+
+# Django
+*.log
+*.sqlite3
+media/
+static_collected/ # If you collect static files
+celerybeat-schedule # Celery Beat's default persistence file (if not using DB scheduler)
+
+# IDEs
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# OS generated files
+.DS_Store
+.Trashes
+Thumbs.db
+
+# Docker
+*.dockerignore
+*.swp
+.docker/
