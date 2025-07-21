@@ -49,7 +49,7 @@ def probably_news(path):
     return "/".join(path_chunks[:-1])
 
 @shared_task
-def scrape_google_links():
+def scrape_links():
     source_hubs = ["https://www.cnn.com", "https://www.foxnews.com"] # for testing purposes
 
     sources = set(source_hubs)

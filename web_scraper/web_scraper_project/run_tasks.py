@@ -1,12 +1,13 @@
 from web_scraper_project.celery import app
-from scraper.crawler import scrape_google_links
+from scraper.crawler import scrape_links
 import time
 
 #if __name__ == '__main__':
 @app.task
 def main():
-    print("Scraping Google links...")
-    urls = scrape_google_links.delay()
+    print("Scraping links...")
+
+    urls = scrape_links.delay()
 
     #print(f"Found {len(urls)} URLs. Dispatching tasks...")
     print("completed?")
