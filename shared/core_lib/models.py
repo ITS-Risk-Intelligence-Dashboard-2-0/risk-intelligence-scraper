@@ -36,30 +36,49 @@ Base = declarative_base()
 # -----------------------------------------
 class Article(Base):
     __tablename__ = 'articles'
-    art_id = Column(Integer, primary_key=True)
+    article_id = Column(String, primary_key=True) # uuid, call a function to generate a unique ID
     url = Column(String, unique=True, nullable=False)
-    title = Column(String)
-    scraped_at = Column(DateTime, default=datetime.datetime.utcnow)
-
-    embeddings = relationship(
-        "EmbeddedArticle",
-        back_populates="article",
-        cascade="all, delete-orphan",
-    )
+    creation_date= Column(DateTime, default=datetime.datetime.utcnow)
 
 
-class Config(Base):
-    __tablename__ = 'configs'
-    config_id = Column(Integer, primary_key=True)
-    config_json = Column(JSONB, nullable=False)
+class Category(Base):
+    __tablename__ = 'categories'
+    category_name = Column(String, primary_key=True)
+    min_relevance_threshold = Column(Float, nullable=False)
+    min_wordcount_threshold = Column(Integer, nullable=False)
 
 
-class Embedded_Articles(Base):
-    __tablename__ = 'embedded_articles'
-    embedded_id = Column(Integer, primary_key=True)
-    art_id = Column(Integer, ForeignKey("articles.art_id"), nullable=False)
-    vectorized_content = Column(JSONB) # probably need to change this type later, still working on setting up pgvector
-    article = relationship("Article", back_populates="embeddings")
+class Article_Scores(Base):
+    __tablename__ = 'article_scores'
+    article_id = Column(String, ForeignKey("articles.art_id", ondelete = "CASCADE"), primary_key=True)
+    category_name = Column(String, ForeignKey("categories.name", ondelete = "CASCADE"), primary_key=True)
+    relevance_score = Column(Float, nullable=False)
+
+
+class Sources(Base):
+    __tablename__ = 'sources'
+    netloc = Column(String, primary_key=True)
+    category = Column(String, ForeignKey("categories.name", ondelete = "CASCADE")) # a topic that the source is trusted for
+    path = Column(String, nullable=False)
+
+
+# NOTE: we should consider this table if we want articles to be associated with their sources
+# which could be useful for deleting articles if a source is deleted
+# we could also consider adding both the source and the category as attributes to the Article model
+# but this would require each article to be associated with only a single source and category
+
+# class Sources_For_Categories(Base):
+#     # join table for sources and categories
+#     # allows a source to be associated with multiple categories
+#     __tablename__ = 'sources_for_categories'
+#     netloc = Column(String, ForeignKey("sources.netloc", ondelete = "CASCADE"), primary_key=True)
+#     category_name = Column(String, ForeignKey("categories.category_name", ondelete = "CASCADE"), primary_key=True)
+
+#     sources = relationship(
+#         "Sources",
+#         back_populates="categories",
+#         cascade="all, delete-orphan",
+#     )
 
 
 def create_db_tables():
