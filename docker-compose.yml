@@ -12,7 +12,17 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-  
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   alembic-migrations:
     build: ./web_scraper
     command: >
@@ -59,7 +69,7 @@ services:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
       django-migrations:
         condition: service_completed_successfully
       alembic-migrations:
@@ -75,25 +85,44 @@ services:
       - ./.env
     environment:
       - DJANGO_SETTINGS_MODULE=web_scraper_project.settings
+      - CELERY_BEAT_SCHEDULER=django_celery_beat.schedulers:DatabaseScheduler
     depends_on:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
       django-migrations:
         condition: service_completed_successfully
       alembic-migrations:
         condition: service_completed_successfully
 
-  redis:
-    image: redis:7-alpine
+  schedule-api:
+    build: ./backend
+    command: gunicorn core.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - ./backend:/app
+      - ./web_scraper:/app/web_scraper
     ports:
-      - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      - "8000:8000"
+    env_file:
+      - ./.env
+    environment:
+      - DJANGO_SETTINGS_MODULE=core.settings
+    depends_on:
+      postgres:
+        condition: service_healthy
+      django-migrations:
+        condition: service_completed_successfully
+
+  streamlit-ui:
+    build: ./frontend
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "8501:8501"
+    depends_on:
+      schedule-api:
+        condition: service_started
 
 volumes:
-  postgres_data:
+  postgres_data: {}

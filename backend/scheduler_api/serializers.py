@@ -1,108 +1,97 @@
-# Defines how Django ORM objects are converted to and from JSON (serialization/deserialization) for the Django REST Framework API
-
 from rest_framework import serializers
-from django_celery_beat.models import PeriodicTask, CrontabSchedule, IntervalSchedule
-import json
-
-class CrontabScheduleSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CrontabSchedule
-        exclude = ('id',)
+from rest_framework.validators import UniqueTogetherValidator
+from django_celery_beat.models import PeriodicTask, IntervalSchedule, CrontabSchedule
 
 class IntervalScheduleSerializer(serializers.ModelSerializer):
     class Meta:
         model = IntervalSchedule
-        exclude = ('id',)
+        # Define fields to prevent accidentally creating duplicates with different timezones
+        fields = ('every', 'period')
+
+        validators = [
+            UniqueTogetherValidator(
+                queryset=IntervalSchedule.objects.all(),
+                fields=['every', 'period']
+            )
+        ]
+
+class CrontabScheduleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CrontabSchedule
+        # Timezone is important for crontabs
+        fields = ('minute', 'hour', 'day_of_week', 'day_of_month', 'month_of_year', 'timezone')
+
+    def to_representation(self, instance):
+        """Convert timezone from ZoneInfo object to string for JSON serialization."""
+        ret = super().to_representation(instance)
+        if instance.timezone:
+            ret['timezone'] = str(instance.timezone)
+        return ret
 
 class PeriodicTaskSerializer(serializers.ModelSerializer):
-    crontab = CrontabScheduleSerializer(required=False, allow_null=True)
+    # Make the nested serializers writable
     interval = IntervalScheduleSerializer(required=False, allow_null=True)
-
-    args = serializers.CharField(required=False, allow_blank=True, default="[]")
-    kwargs = serializers.CharField(required=False, allow_blank=True, default="{}")
+    crontab = CrontabScheduleSerializer(required=False, allow_null=True)
 
     class Meta:
         model = PeriodicTask
-        fields = (
-            'id', 'name', 'task', 'enabled', 'args', 'kwargs', 'expires',
-            'one_off', 'start_time', 'priority', 'description',
-            'crontab', 'interval'
-        )
-        read_only_fields = ('id', 'last_run_at', 'total_run_count', 'date_changed')
+        # Explicitly list fields for clarity and security
+        fields = ('id', 'name', 'task', 'interval', 'crontab', 'args', 'kwargs', 'enabled', 'last_run_at')
+        # args and kwargs are correctly treated as string fields by default
 
-    def to_internal_value(self, data):
-        if 'args' in data and isinstance(data['args'], str):
-            try:
-                data['args'] = json.loads(data['args'])
-            except json.JSONDecodeError:
-                raise serializers.ValidationError({'args': 'Must be a valid JSON array string.'})
-        if 'kwargs' in data and isinstance(data['kwargs'], str):
-            try:
-                data['kwargs'] = json.loads(data['kwargs'])
-            except json.JSONDecodeError:
-                raise serializers.ValidationError({'kwargs': 'Must be a valid JSON object string.'})
-        return super().to_internal_value(data)
-
-    def to_representation(self, instance):
-        ret = super().to_representation(instance)
-        if ret.get('args') is not None:
-            ret['args'] = json.dumps(ret['args'])
-        if ret.get('kwargs') is not None:
-            ret['kwargs'] = json.dumps(ret['kwargs'])
-        return ret
+    def validate(self, data):
+        """Ensure either an interval or a crontab is set, but not both."""
+        if self.partial: # Skip validation on partial updates (PATCH)
+            return data
+        if not data.get('interval') and not data.get('crontab'):
+            raise serializers.ValidationError("A schedule is required. Please provide either an interval or a crontab.")
+        if data.get('interval') and data.get('crontab'):
+            raise serializers.ValidationError("Cannot define both an interval and a crontab schedule for the same task.")
+        return data
 
     def create(self, validated_data):
-        crontab_data = validated_data.pop('crontab', None)
+        """Handle creation of task with a nested schedule."""
         interval_data = validated_data.pop('interval', None)
-
-        if not crontab_data and not interval_data:
-            raise serializers.ValidationError("Either crontab or interval schedule must be provided.")
-        if crontab_data and interval_data:
-            raise serializers.ValidationError("Only one schedule type (crontab or interval) can be provided.")
-
-        schedule_instance = None
+        crontab_data = validated_data.pop('crontab', None)
+        
+        if interval_data:
+            # Use get_or_create to reuse existing schedules and prevent DB clutter
+            interval, _ = IntervalSchedule.objects.get_or_create(**interval_data)
+            validated_data['interval'] = interval
+            
         if crontab_data:
-            schedule_instance = CrontabSchedule.objects.create(**crontab_data)
-            validated_data['crontab'] = schedule_instance
-        elif interval_data:
-            schedule_instance = IntervalSchedule.objects.create(**interval_data)
-            validated_data['interval'] = schedule_instance
+            crontab, _ = CrontabSchedule.objects.get_or_create(**crontab_data)
+            validated_data['crontab'] = crontab
 
-        periodic_task = PeriodicTask.objects.create(**validated_data)
-        return periodic_task
+        return PeriodicTask.objects.create(**validated_data)
 
     def update(self, instance, validated_data):
-        crontab_data = validated_data.pop('crontab', None)
+        """
+        Handle updates for a task, including its nested schedule.
+        This method is now robust for all update scenarios.
+        """
+        # Pop the schedule data out of the validated_data dictionary.
+        # This prevents the super().update() method from trying to process it.
         interval_data = validated_data.pop('interval', None)
+        crontab_data = validated_data.pop('crontab', None)
 
-        if crontab_data:
-            if instance.crontab:
-                for attr, value in crontab_data.items():
-                    setattr(instance.crontab, attr, value)
-                instance.crontab.save()
-            else:
-                if instance.interval:
-                    instance.interval.delete()
-                instance.crontab = CrontabSchedule.objects.create(**crontab_data)
-        elif interval_data:
-            if instance.interval:
-                for attr, value in interval_data.items():
-                    setattr(instance.interval, attr, value)
-                instance.interval.save()
-            else:
-                if instance.crontab:
-                    instance.crontab.delete()
-                instance.interval = IntervalSchedule.objects.create(**interval_data)
-        else:
-            if instance.crontab:
-                instance.crontab.delete()
-                instance.crontab = None
-            if instance.interval:
-                instance.interval.delete()
-                instance.interval = None
+        # Let the parent class handle the update of all simple fields 
+        # like name, task, enabled, kwargs, etc.
+        instance = super().update(instance, validated_data)
 
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-
+        # Now, handle the schedule logic manually.
+        if interval_data:
+            # If interval data is provided, find or create that schedule
+            # and assign it to the task.
+            new_interval, _ = IntervalSchedule.objects.get_or_create(**interval_data)
+            instance.interval = new_interval
+            instance.crontab = None  # Ensure the other schedule type is cleared
+        elif crontab_data:
+            # Same logic for crontab
+            new_crontab, _ = CrontabSchedule.objects.get_or_create(**crontab_data)
+            instance.crontab = new_crontab
+            instance.interval = None # Ensure the other schedule type is cleared
+        
+        # Save the instance to commit the schedule changes.
         instance.save()
         return instance

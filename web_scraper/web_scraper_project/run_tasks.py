@@ -1,49 +1,45 @@
-from web_scraper_project.celery import app
+from celery import shared_task, chain, group
 from scraper.crawler import scrape_links
+from scraper.filter import filter_scraped_urls
 import time
 
-#if __name__ == '__main__':
-@app.task
-def main():
-    print("Scraping links...")
+@shared_task(name="web_scraper.tasks.start_scraping_workflow")
+def start_scraping_workflow():
+    """
+    This is a meta-task that defines and dispatches the entire workflow.
+    It chains the initial scrape with the main processing task.
+    """
+    # The first task gets the list of URLs.
+    # The second task (process_url_list) receives this list and creates the parallel jobs.
+    workflow = chain(
+        scrape_links.s(),
+        process_url_list.s()
+    )
+    workflow.delay()
+    print("Scraping workflow initiated.")
 
-    urls = scrape_links.delay()
+@shared_task
+def process_url_list(urls):
+    """
+    Receives a list of URLs and creates a group of parallel processing chains.
+    Each chain validates one URL and then generates a PDF for it.
+    """
+    if not urls:
+        print("No URLs to process.")
+        return
 
-    #print(f"Found {len(urls)} URLs. Dispatching tasks...")
-    print("completed?")
+    print(f"Dispatching {len(urls)} parallel jobs...")
 
-    """tasks_to_monitor = []
-    task_start_times = {}
-    for idx, url in enumerate(urls):
-        result = generate_pdf_task.delay(url)
-        print(f"Task 'generate_pdf_task({url})' dispatched with ID: {result.id}")
-        tasks_to_monitor.append((f"generate_pdf_task({url})", result))
-        task_start_times[result.id] = time.monotonic()
+    # Create a group of chains.
+    # Each element in the group is a mini-workflow for one URL.
+    job_group = group(
+        chain(
+            filter_scraped_urls.s(url)    # Step 1: Filter this specific URL
+            #, some_stage.s()          # Step 2: Submit to next stage of pipeline if passed
+        ) for url in urls
+    )
 
-    print(f"\nWaiting for {len(tasks_to_monitor)} tasks to complete...")
-
-    while tasks_to_monitor:
-        # Iterate over a copy of the list to allow safe removal
-        for task_name, task_obj in tasks_to_monitor[:]:
-            if task_obj.ready():
-                end_time = time.monotonic()
-                start_time = task_start_times.get(task_obj.id, end_time)
-                duration = end_time - start_time
-
-                print(f"\nTask '{task_name}' (ID: {task_obj.id}) finished in {duration:.2f} seconds.")
-                try:
-                    value = task_obj.get()
-                    print(f"Result: {value}")
-                except Exception as e:
-                    print(f"Task execution resulted in an error: {e}")
-
-                print(f"Task state: {task_obj.state}")
-                
-                # Remove the completed task from the monitoring list
-                tasks_to_monitor.remove((task_name, task_obj))
-
-        time.sleep(0.5)"""
-
-    print("\nAll tasks have completed.")
-
-main()
+    # Run the entire group of jobs in parallel
+    job_group.delay()
+    
+    print(f"Group of {len(urls)} jobs has been dispatched to workers.")

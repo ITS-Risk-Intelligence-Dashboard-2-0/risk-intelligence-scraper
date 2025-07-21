@@ -51,35 +51,53 @@ def probably_news(path):
 @shared_task
 def scrape_links():
     source_hubs = ["https://www.cnn.com", "https://www.foxnews.com"] # for testing purposes
-
     sources = set(source_hubs)
 
-    results = []
-    while len(sources) > 0:
+    scraped_urls = []
+    
+    processed_urls = set()
+
+    # Limit the loop to prevent infinite runs. Feel free to remove
+    max_iterations = 100 
+    iterations = 0
+
+    while len(sources) > 0 and iterations < max_iterations:
         curr_source = sources.pop()
+        if curr_source in processed_urls:
+            continue
+        
+        processed_urls.add(curr_source)
+        iterations += 1
+
+        print(f"Scraping: {curr_source}")
 
         curr_source_parsed = urlparse(curr_source)
-
         try:
-            response = requests.get(curr_source)
-        except:
+            response = requests.get(curr_source, timeout=10)
+            response.raise_for_status()
+        except requests.RequestException as e:
+            print(f"Could not fetch {curr_source}: {e}")
             continue
 
         parsed_html = BeautifulSoup(response.text, "html.parser")
-
         anchor_tags = parsed_html.find_all("a")
 
         for anchor in anchor_tags:
             if not anchor.has_attr("href"):
                 continue
 
-            scraped_url = urlparse(anchor.get("href"))
+            scraped_url_path = anchor.get("href")
+            scraped_url = urlparse(scraped_url_path)
+
             if not same_domain(scraped_url.netloc, curr_source_parsed.netloc):
                 continue
 
             if probably_news(scraped_url.path):
                 final_url = build_url(curr_source_parsed, scraped_url)
-                filter_scraped_urls.delay(final_url)
+                
+                if final_url not in scraped_urls:
+                    scraped_urls.append(final_url)
 
-    return []
+    print(f"Scraping complete. Found {len(scraped_urls)} potential news URLs.")
+    return scraped_urls
 
