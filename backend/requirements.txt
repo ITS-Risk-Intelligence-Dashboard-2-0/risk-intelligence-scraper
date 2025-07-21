@@ -1,0 +1,10 @@
+Django>=4.0
+djangorestframework
+django-celery-beat
+celery>=5.0
+redis>=4.0
+streamlit
+requests
+python-dotenv
+django-cors-headers
+    
