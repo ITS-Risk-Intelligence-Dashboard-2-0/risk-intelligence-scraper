@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'django_celery_beat',
     'scheduler_api',
+    'articles',
     'corsheaders', # For CORS (Cross-Origin Resource Sharing)
 ]
 
