@@ -60,7 +60,8 @@ class Sources(Base):
     netloc = Column(String, primary_key=True)
     category = Column(String, ForeignKey("categories.name", ondelete = "CASCADE")) # a topic that the source is trusted for
     path = Column(String, nullable=False)
-
+    depth = Column(Integer, default=0) # depth of the source in the hierarchy, 0 for top-level sources
+    target = Column(String, nullable=True) # pdf, website, etc
 
 # NOTE: we should consider this table if we want articles to be associated with their sources
 # which could be useful for deleting articles if a source is deleted

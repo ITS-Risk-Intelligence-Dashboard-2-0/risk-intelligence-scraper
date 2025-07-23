@@ -249,3 +249,40 @@ def sqlUnassociateSeed(netloc: str, path: str, category: str):
         raise
     finally:
         session.close()
+
+
+def sqlUpdateSeeds(netloc: str, path: str, category: str = None, parameter: str, value):
+    """
+    Updates the config settings on a specified parameter for a given source.
+    Can choose to specify category or do it for the source in general.
+    Only updates one specified parameter at a time.
+    """
+    session = Session()
+    try:
+        # Make sure the parameter is valid
+        if parameter not in {"depth", "target"}:
+            raise ValueError(f"Invalid parameter: {parameter}")
+
+        if category is None:
+            # If no category is specified, update it for all sources with that netloc and path
+            sql = text(f"""
+                UPDATE sources
+                SET {parameter} = :value
+                WHERE netloc = :netloc AND path = :path
+            """)
+            session.execute(sql, {"value": value, "netloc": netloc, "path": path})
+        else:
+            # If category is specified, update it for the specific source and in that category
+            sql = text(f"""
+                UPDATE sources
+                SET {parameter} = :value
+                WHERE category_name = :category
+                AND netloc = :netloc AND path = :path
+            """)
+            session.execute(sql, {"value": value, "category": category, "netloc": netloc, "path": path})
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        session.close()
