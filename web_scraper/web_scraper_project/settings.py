@@ -5,9 +5,6 @@
 # Add your app modules here.
 CELERY_IMPORTS = [
     'web_scraper_project.run_tasks',
-    'scraper.crawler',
-    'scraper.filter',
-    'scraper.retrieval',
 ]
 
 import os

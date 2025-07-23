@@ -1,3 +1,4 @@
+from sqlalchemy import text
 from sqlalchemy.orm import sessionmaker
 from shared.core_lib.models import engine, Article, Sources
 import uuid

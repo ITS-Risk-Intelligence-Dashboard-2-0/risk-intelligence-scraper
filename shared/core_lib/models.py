@@ -50,15 +50,15 @@ class Category(Base):
 
 class Article_Scores(Base):
     __tablename__ = 'article_scores'
-    article_id = Column(String, ForeignKey("articles.art_id", ondelete = "CASCADE"), primary_key=True)
-    category_name = Column(String, ForeignKey("categories.name", ondelete = "CASCADE"), primary_key=True)
+    article_id = Column(String, ForeignKey("articles.article_id", ondelete = "CASCADE"), primary_key=True)
+    category_name = Column(String, ForeignKey("categories.category_name", ondelete = "CASCADE"), primary_key=True)
     relevance_score = Column(Float, nullable=False)
 
 
 class Sources(Base):
     __tablename__ = 'sources'
     netloc = Column(String, primary_key=True)
-    category = Column(String, ForeignKey("categories.name", ondelete = "CASCADE")) # a topic that the source is trusted for
+    category = Column(String, ForeignKey("categories.category_name", ondelete = "CASCADE"), primary_key=True) # a topic that the source is trusted for
     path = Column(String, nullable=False)
     depth = Column(Integer, default=0) # depth of the source in the hierarchy, 0 for top-level sources
     target = Column(String, nullable=True) # pdf, website, etc
@@ -91,6 +91,4 @@ def create_db_tables():
     print("Tables created successfully.")
 
 
-
-if __name__ == "__main__":
-    create_db_tables()
+create_db_tables()

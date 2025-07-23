@@ -1,8 +1,7 @@
 from celery import shared_task
-import requests
-from bs4 import BeautifulSoup
-from scraper.filter import filter_scraped_urls
 from urllib.parse import urlparse, urlunparse
+
+from playwright.sync_api import sync_playwright
 
 def build_url(current_url, scraped_url):
     return urlunparse(("https", current_url.netloc, scraped_url.path, '', '', ''))
@@ -32,6 +31,12 @@ def analyze_last_path(chunk):
             if c >= 'a' and c <= 'z':
                 continue
 
+            if c >= 'A' and c <= 'Z':
+                continue
+
+            if c >= '0' and c <= '9':
+                continue
+
             if c == '-' or c == '.':
                 continue
 
@@ -40,7 +45,7 @@ def analyze_last_path(chunk):
     return True
 
 def probably_news(path):
-    path_chunks = path.split("/")
+    path_chunks = path.rstrip("/").split("/")
     is_article = analyze_last_path(path_chunks[-1])
 
     if not is_article:
@@ -48,56 +53,83 @@ def probably_news(path):
 
     return "/".join(path_chunks[:-1])
 
-@shared_task
-def scrape_links():
-    source_hubs = ["https://www.cnn.com", "https://www.foxnews.com"] # for testing purposes
-    sources = set(source_hubs)
+def is_pdf(path):
+    trimmed = path.rstrip("/")
+    return trimmed.endswith(".pdf")
 
-    scraped_urls = []
-    
+def playwright_retrieve_urls(page, url, timeout_time, max_retry):
+    for _ in range(max_retry):
+        try:
+            page.goto(url, wait_until="networkidle", timeout=timeout_time)
+            urls = page.eval_on_selector_all(
+                "a",
+                "elems => elems.map(elem => elem.href)"
+            )
+
+            return urls
+
+        except TimeoutError:
+            continue
+        except Exception as e:
+            print(e)
+            return []
+
+@shared_task
+def scrape_links(browser):
+    source_hubs = [{
+        "url": "https://www.theiia.org/en/internal-audit-foundation/latest-research-and-products/risk-in-focus/",
+        "depth": 1
+    }]
     processed_urls = set()
 
-    # Limit the loop to prevent infinite runs. Feel free to remove
-    max_iterations = 100 
-    iterations = 0
+    found_urls = set()
+    found_pdfs = set()
 
-    while len(sources) > 0 and iterations < max_iterations:
-        curr_source = sources.pop()
-        if curr_source in processed_urls:
-            continue
-        
-        processed_urls.add(curr_source)
-        iterations += 1
+    with sync_playwright() as p:
+        # initialize browser and page for crawling
+        browser = p.chromium.connect_over_cdp(browser)
+        page = browser.new_page()
 
-        print(f"Scraping: {curr_source}")
-
-        curr_source_parsed = urlparse(curr_source)
-        try:
-            response = requests.get(curr_source, timeout=10)
-            response.raise_for_status()
-        except requests.RequestException as e:
-            print(f"Could not fetch {curr_source}: {e}")
-            continue
-
-        parsed_html = BeautifulSoup(response.text, "html.parser")
-        anchor_tags = parsed_html.find_all("a")
-
-        for anchor in anchor_tags:
-            if not anchor.has_attr("href"):
+        while len(source_hubs) > 0:
+            # grab an item from the queue
+            curr_item = source_hubs.pop()
+            curr_source = curr_item["url"]
+            if curr_item["depth"] > 1:
                 continue
-
-            scraped_url_path = anchor.get("href")
-            scraped_url = urlparse(scraped_url_path)
-
-            if not same_domain(scraped_url.netloc, curr_source_parsed.netloc):
+            if curr_source in processed_urls:
                 continue
+            
+            processed_urls.add(curr_source)
 
-            if probably_news(scraped_url.path):
-                final_url = build_url(curr_source_parsed, scraped_url)
-                
-                if final_url not in scraped_urls:
-                    scraped_urls.append(final_url)
+            curr_source_parsed = urlparse(curr_source)
 
-    print(f"Scraping complete. Found {len(scraped_urls)} potential news URLs.")
-    return scraped_urls
+            urls = playwright_retrieve_urls(page, curr_source, 60000, 3)
 
+            # analyze the urls
+            for url in urls:
+                scraped_url_parsed = urlparse(url)
+
+                if not same_domain(scraped_url_parsed.netloc, curr_source_parsed.netloc):
+                    continue
+
+                built_url = build_url(curr_source_parsed, scraped_url_parsed)
+
+                if is_pdf(scraped_url_parsed.path):
+                    if built_url not in found_pdfs:
+                        found_pdfs.add(built_url)
+                        continue
+
+                source_hubs.append({
+                    "url": built_url,
+                    "depth": curr_item["depth"] + 1
+                })
+
+                if probably_news(scraped_url_parsed.path):
+                    if built_url not in found_urls:
+                        found_urls.add(built_url)
+
+        page.close()
+        browser.close()
+
+    print(f"Scraping complete! Found {len(found_urls)} potential news URLs and {len(found_pdfs)} pdfs!")
+    return (list(found_urls), list(found_pdfs))
