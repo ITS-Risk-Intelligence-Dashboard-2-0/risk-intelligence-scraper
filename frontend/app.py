@@ -4,6 +4,7 @@ import requests
 import pandas as pd
 import json
 from collections import OrderedDict
+from uuid import UUID
 
 # The backend service is accessible via its service name in Docker Compose
 API_URL = "http://schedule-api:8000/api"
@@ -249,6 +250,80 @@ def task_form(task_to_edit=None, registered_tasks=None):
                 del st.session_state.kwargs_list
             st.rerun()
 
+def article_management_ui():
+    st.header("📰 Article Manager")
+
+    # Fetch all articles
+    articles = api_request("get", "articles")
+    if articles is None:
+        return
+
+    # Display each article with a Delete and Edit button
+    st.subheader("📄 Existing Articles")
+    if articles:
+        for article in articles:
+            with st.container():
+                col1, col2, col3 = st.columns([6, 1, 1])
+                with col1:
+                    st.markdown(f"**{article['url']}**  \nNetloc: `{article['netloc']}`  \nPath: `{article['path']}`  \nCreated: `{article['creation_date']}`  \nApproved: `{article['approved']}`")
+                with col2:
+                    if st.button("✏️ Edit", key=f"edit_{article['id']}"):
+                        st.session_state.editing_article = article
+                with col3:
+                    if st.button("🗑️ Delete", key=f"delete_{article['id']}"):
+                        if api_request("delete", "articles", item_id=article["id"]):
+                            st.success("Article deleted.")
+                            st.rerun()
+    else:
+        st.info("No articles found.")
+
+    # Edit mode
+    if "editing_article" in st.session_state:
+        st.markdown("---")
+        st.subheader("📝 Edit Article")
+
+        article = st.session_state.editing_article
+        netloc = st.text_input("Netloc", value=article["netloc"])
+        path = st.text_input("Path", value=article["path"])
+        url = st.text_input("URL", value=article["url"])
+        approved = st.checkbox("Approved", value=article["approved"])
+
+        if st.button("💾 Save Changes"):
+            update_data = {
+                "netloc": netloc,
+                "path": path,
+                "url": url,
+                "approved": approved
+            }
+            if api_request("put", "articles", item_id=article["id"], data=update_data):
+                st.success("Article updated.")
+                del st.session_state.editing_article
+                st.rerun()
+
+        if st.button("❌ Cancel Edit"):
+            del st.session_state.editing_article
+
+    # Add new article
+    st.markdown("---")
+    st.subheader("➕ Add New Article")
+
+    new_netloc = st.text_input("New Netloc", key="new_netloc")
+    new_path = st.text_input("New Path", key="new_path")
+    new_url = st.text_input("New URL", key="new_url")
+    new_approved = st.checkbox("Approved?", key="new_approved")
+
+    if st.button("➕ Create Article"):
+        new_data = {
+            "netloc": new_netloc,
+            "path": new_path,
+            "url": new_url,
+            "approved": new_approved
+        }
+        if api_request("post", "articles", data=new_data):
+            st.success("Article created.")
+            st.rerun()
+
+
 # --- Main Application Flow ---
 def main():
     periodic_tasks = api_request("get", "periodic-tasks")
@@ -262,13 +337,15 @@ def main():
         task_to_edit = next((t for t in periodic_tasks if t['id'] == st.session_state.edit_task_id), None)
         task_form(task_to_edit=task_to_edit, registered_tasks=registered_tasks)
     else:
-        tab1, tab2 = st.tabs(["📊 Manage Tasks", "➕ Create New Task"])
+        tab1, tab2, tab3 = st.tabs(["📊 Manage Tasks", "➕ Create New Task", "📰 Manage Articles"])
         with tab1:
             display_tasks_ui(periodic_tasks, registered_tasks)
         with tab2:
             if 'kwargs_list' in st.session_state and not st.session_state.get('edit_task_id'):
                 del st.session_state.kwargs_list
             task_form(registered_tasks=registered_tasks)
+        with tab3:
+            article_management_ui()
 
 if __name__ == "__main__":
     main()
