@@ -26,7 +26,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'django_celery_beat',
     'scheduler_api',
-    'articles',
+    'shared.core_lib.articles', # might have to change as this only works in a docker container
     'corsheaders', # For CORS (Cross-Origin Resource Sharing)
 ]
 

@@ -37,6 +37,7 @@ Base = declarative_base()
 class Article(Base):
     __tablename__ = 'articles'
     article_id = Column(String, primary_key=True) # uuid, call a function to generate a unique ID
+    google_drive_id = Column(String)
     url = Column(String, unique=True, nullable=False)
     creation_date= Column(DateTime, default=datetime.datetime.utcnow)
 
