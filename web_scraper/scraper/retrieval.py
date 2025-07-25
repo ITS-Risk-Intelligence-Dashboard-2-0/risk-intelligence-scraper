@@ -1,61 +1,54 @@
-from bs4 import BeautifulSoup
 from celery import shared_task
-import asyncio
-from pyppeteer import launch
+from playwright.sync_api import sync_playwright
 import requests
+import uuid
+
+def install_page_as_pdf(page, url, path, timeout_time, max_retry):
+    for _ in range(max_retry):
+        try:
+            page.goto(url, wait_until="networkidle")
+            page.pdf(path=path)
+
+            return True
+        except TimeoutError:
+            continue
+        except Exception:
+            return False
+
+    try:
+        page.goto(url, wait_until="load")
+        page.pdf(path=path)
+
+        return True
+    except:
+        return False
 
 @shared_task
-async def generate_pdf_task(url):
-    response = requests.get(url).text
+def retrieve_page(url_batch, browser):
+    with sync_playwright() as p:
+        browser = p.chromium.connect_over_cdp(browser)
+        page = browser.new_page()
 
-    soup = BeautifulSoup(response, 'html.parser')
+        for url in url_batch:
+            install_filename = str(uuid.uuid4()).replace("-", "_")
 
-    title = url
-    for tag in [soup.find('title'), soup.find('h1'), soup.find('h2'), soup.find('h3')]:
-        if tag and tag.get_text(strip=True):
-            title = tag.get_text(strip=True)
-            break
+            install_page_as_pdf(page, url, f"/app/pages/{install_filename}.pdf", 5000, 2)
 
+            print(f"INSTALLED {url} => {install_filename}.pdf")
 
-    browser = await launch()
-    page = await browser.newPage()
-    
-    await page.goto(url)
-    
-    pdf_path = f"./gdrive/saved_sites/{title}.pdf" 
-    
-    await page.pdf({'path': pdf_path, 'format': 'A4'})
-    
-    await browser.close()
+        page.close()
+        browser.close()
 
-    print(f"Simulating download of: {url}")
+@shared_task
+def retrieve_pdf(urls):
+    response = requests.get(urls[0])
+    status = response.status_code
+    if status // 100 != 2:
+        print(f"ERROR retrieving pdf from {urls[0]}")
+        return None
 
-    return pdf_path
+    install_filename = str(uuid.uuid4()).replace("-", "_")
+    with open(f"/app/pages/fff{install_filename}.pdf", "wb") as f:
+        f.write(response.content)
 
-
-#def main():
-    #asyncio.get_event_loop().run_until_complete(generate_pdf_task('https://apitemplate.io/blog/how-to-convert-html-to-pdf-using-python/'))
-
-#main()
-"""
-import asyncio
-from pyppeteer import launch
-
-async def generate_pdf(url, pdf_path):
-    browser = await launch()
-    page = await browser.newPage()
-    
-    await page.goto(url)
-    
-    await page.pdf({'path': pdf_path, 'format': 'A4'})
-    
-    await browser.close()
-
-
-def main():
-    asyncio.get_event_loop().run_until_complete(generate_pdf('https://apitemplate.io/blog/how-to-convert-html-to-pdf-using-python/', 'example.pdf'))
-
-main() 
-
-
-"""
+    print("PDF successfully written")

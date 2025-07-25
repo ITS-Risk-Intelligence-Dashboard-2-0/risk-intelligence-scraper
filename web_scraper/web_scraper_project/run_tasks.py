@@ -1,7 +1,42 @@
+import socket
+import requests
+import os
+
 from celery import shared_task, chain, group
+from playwright.sync_api import sync_playwright
+
+from web_scraper_project.celery import app
+
+from maizey_api.api_call import create_conversation, call_api
+
 from scraper.crawler import scrape_links
-from scraper.filter import filter_scraped_urls
-import time
+from scraper.basic_filter import filter_scraped_urls
+from scraper.pdf_scraper import scrape_pdf_text
+from scraper.retrieval import retrieve_page, retrieve_pdf
+from scraper.maizey_filter import maizey_filter_content
+#from shared.core_lib.db_utils import sqlInsertCategory
+
+
+def batch_items(arr, batch_count):
+    batches = [[] for _ in range(batch_count)]
+
+    for i in range(len(arr)):
+        chunk = i % batch_count
+        batches[chunk].append(arr[i])
+
+    return batches
+
+def retrieve_browser_link(browser):
+    try:
+        browser_ip = socket.gethostbyname(browser)
+        response = requests.get(f"http://{browser_ip}:9222/json/version")
+        return response.json()["webSocketDebuggerUrl"]
+    except socket.gaierror as e:
+        print(f"DNS resolution failed: {e}")
+        return None
+    except Exception as e:
+        print(e)
+        return None
 
 @shared_task(name="web_scraper.tasks.start_scraping_workflow")
 def start_scraping_workflow():
@@ -9,37 +44,47 @@ def start_scraping_workflow():
     This is a meta-task that defines and dispatches the entire workflow.
     It chains the initial scrape with the main processing task.
     """
-    # The first task gets the list of URLs.
-    # The second task (process_url_list) receives this list and creates the parallel jobs.
+
+    browser_connection = retrieve_browser_link("browser")
+    if browser_connection is None:
+        print("ERROR. Could not connect to browser instance!")
+        return
+
     workflow = chain(
-        scrape_links.s(),
-        process_url_list.s()
+        scrape_links.s(browser_connection),
+        process_url_list.s(browser_connection)
     )
     workflow.delay()
     print("Scraping workflow initiated.")
 
 @shared_task
-def process_url_list(urls):
+def process_url_list(discovered_paths, browser_connection):
     """
     Receives a list of URLs and creates a group of parallel processing chains.
     Each chain validates one URL and then generates a PDF for it.
     """
-    if not urls:
-        print("No URLs to process.")
-        return
 
-    print(f"Dispatching {len(urls)} parallel jobs...")
+    urls, pdfs = discovered_paths
 
-    # Create a group of chains.
-    # Each element in the group is a mini-workflow for one URL.
-    job_group = group(
+    # dispatch url scraping pipeline
+    batched_urls = batch_items(urls, 1)
+    url_group = group(
         chain(
-            filter_scraped_urls.s(url)    # Step 1: Filter this specific URL
-            #, some_stage.s()          # Step 2: Submit to next stage of pipeline if passed
-        ) for url in urls
+            filter_scraped_urls.s((batch, browser_connection)),
+            maizey_filter_content.s(),
+            retrieve_page.s(browser_connection)
+        ) for batch in batched_urls
     )
 
-    # Run the entire group of jobs in parallel
-    job_group.delay()
-    
-    print(f"Group of {len(urls)} jobs has been dispatched to workers.")
+    url_group.delay()
+
+    # dispatch pdf scraping pipeline
+    pdf_group = group(
+        chain(
+            scrape_pdf_text.s(pdf),
+            maizey_filter_content.s(),
+            retrieve_pdf.s()
+        ) for pdf in pdfs
+    )
+
+    pdf_group.delay()
