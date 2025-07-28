@@ -4,7 +4,9 @@ import requests
 import pandas as pd
 import json
 from collections import OrderedDict
+from datetime import datetime
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 # The backend service is accessible via its service name in Docker Compose
 API_URL = "http://schedule-api:8000/api"
@@ -258,74 +260,94 @@ def article_management_ui():
     if articles is None:
         return
 
-    # Display each article with a Delete and Edit button
+    # Display as table header
     st.subheader("📄 Existing Articles")
     if articles:
+        header_cols = st.columns([4, 2, 2, 2, 1, 1])
+        headers = ["URL", "Created", "Drive ID", "Approved", "Edit", "Delete"]
+        for col, label in zip(header_cols, headers):
+            col.markdown(f"**{label}**")
+
         for article in articles:
-            with st.container():
-                col1, col2, col3 = st.columns([6, 1, 1])
-                with col1:
-                    st.markdown(f"**{article['url']}**  \nNetloc: `{article['netloc']}`  \nPath: `{article['path']}`  \nCreated: `{article['creation_date']}`  \nApproved: `{article['approved']}`")
-                with col2:
-                    if st.button("✏️ Edit", key=f"edit_{article['id']}"):
-                        st.session_state.editing_article = article
-                with col3:
-                    if st.button("🗑️ Delete", key=f"delete_{article['id']}"):
-                        if api_request("delete", "articles", item_id=article["id"]):
-                            st.success("Article deleted.")
-                            st.rerun()
+            cols = st.columns([4, 2, 2, 2, 1, 1])
+            cols[0].markdown(article["url"])
+            raw_date = article["creation_date"]
+            dt_utc = datetime.fromisoformat(raw_date.replace("Z", "+00:00")).astimezone(ZoneInfo("UTC"))
+            dt_et = dt_utc.astimezone(ZoneInfo("America/New_York"))
+            formatted_date = dt_et.strftime("%m/%d/%Y %I:%M %p")
+            cols[1].markdown(formatted_date) # human readable datetime format
+            cols[2].markdown(article.get("drive_id", ""))
+            cols[3].markdown("✅" if article["approved"] else "❌")
+            if cols[4].button("✏️", key=f"edit_{article['id']}"):
+                st.session_state.editing_article = article
+            if cols[5].button("🗑️", key=f"delete_{article['id']}"):
+                if api_request("delete", "articles", item_id=article["id"]):
+                    st.success("Article deleted.")
+                    st.rerun()
     else:
         st.info("No articles found.")
 
-    # Edit mode
+    # Show Edit Form
     if "editing_article" in st.session_state:
         st.markdown("---")
         st.subheader("📝 Edit Article")
 
         article = st.session_state.editing_article
-        netloc = st.text_input("Netloc", value=article["netloc"])
-        path = st.text_input("Path", value=article["path"])
         url = st.text_input("URL", value=article["url"])
+        drive_id = st.text_input("Drive File ID", value=article.get("drive_id", ""))
         approved = st.checkbox("Approved", value=article["approved"])
 
-        if st.button("💾 Save Changes"):
+        col1, col2 = st.columns([1, 1])
+        if col1.button("💾 Save Changes"):
             update_data = {
-                "netloc": netloc,
-                "path": path,
                 "url": url,
+                "drive_id": drive_id,
                 "approved": approved
             }
-            if api_request("put", "articles", item_id=article["id"], data=update_data):
-                st.success("Article updated.")
-                del st.session_state.editing_article
-                st.rerun()
-
-        if st.button("❌ Cancel Edit"):
+        if api_request("put", "articles", item_id=article["id"], data=update_data):
+            st.success("Article updated.")
             del st.session_state.editing_article
+            st.rerun()
+        else:
+            st.error("Update failed. Please try again.")
 
-    # Add new article
-    st.markdown("---")
-    st.subheader("➕ Add New Article")
-
-    new_netloc = st.text_input("New Netloc", key="new_netloc")
-    new_path = st.text_input("New Path", key="new_path")
-    new_url = st.text_input("New URL", key="new_url")
-    new_approved = st.checkbox("Approved?", key="new_approved")
-
-    if st.button("➕ Create Article"):
-        new_data = {
-            "netloc": new_netloc,
-            "path": new_path,
-            "url": new_url,
-            "approved": new_approved
-        }
-        if api_request("post", "articles", data=new_data):
-            st.success("Article created.")
+        if col2.button("❌ Cancel Edit"):
+            del st.session_state.editing_article
             st.rerun()
 
+    # Show Add Form (if not editing)
+    if "editing_article" not in st.session_state:
+        st.markdown("---")
+        st.subheader("➕ Add New Article")
+
+        new_url = st.text_input("New URL", key="new_url")
+        new_drive_id = st.text_input("New Drive File ID", key="new_drive_id")
+        new_approved = st.checkbox("Approved?", key="new_approved")
+
+        if st.button("➕ Create Article"):
+            new_data = {
+                "url": new_url,
+                "drive_id": new_drive_id,
+                "approved": new_approved
+            }
+            if api_request("post", "articles", data=new_data):
+                st.success("Article created.")
+                st.rerun()
 
 # --- Main Application Flow ---
 def main():
+
+    # removes the deploy button link
+    st.markdown(
+    r"""
+    <style>
+    .stAppDeployButton {
+            visibility: hidden;
+        }
+    </style>
+    """, unsafe_allow_html=True
+    )
+
     periodic_tasks = api_request("get", "periodic-tasks")
     registered_tasks = api_request("get", "registered-tasks")
     

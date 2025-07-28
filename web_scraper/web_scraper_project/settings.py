@@ -23,6 +23,7 @@ SECRET_KEY = "dummy-secret-key-for-migrations"
 
 INSTALLED_APPS = (
     'django_celery_beat',
+    'shared.core_lib.articles'
 )
 
 # Configure the database connection using the DATABASE_URL from the .env file

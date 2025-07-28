@@ -2,6 +2,7 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
+sys.path.insert(0, '/app')  # Allow /app/shared/core_lib to be importable
 
 def main():
     """Run administrative tasks."""

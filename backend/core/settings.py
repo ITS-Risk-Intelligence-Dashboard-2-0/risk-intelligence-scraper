@@ -27,6 +27,9 @@ INSTALLED_APPS = [
     'django_celery_beat',
     'scheduler_api',
     'shared.core_lib.articles', # might have to change as this only works in a docker container
+    'shared.core_lib.category',
+    'shared.core_lib.article_score',
+    'shared.core_lib.source',
     'corsheaders', # For CORS (Cross-Origin Resource Sharing)
 ]
 

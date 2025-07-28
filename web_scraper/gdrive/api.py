@@ -5,7 +5,8 @@ from googleapiclient.http import MediaFileUpload
 from googleapiclient.errors import HttpError
 
 # --- Configuration ---
-SERVICE_ACCOUNT_FILE = '/Users/hrychen/Desktop/Google API/risk-intel-db-f19a1b90a785.json'
+# PLEASE ADD THE JSON FILE TO THE ROOT OF THE web_scraper directory
+SERVICE_ACCOUNT_FILE = 'web_scraper/risk-intel-db-f19a1b90a785.json'
 FOLDER_ID = '1-3cTCANoUdWEc-jTArx1Kpzy9cpmA5ad'
 SCOPES = ['https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/drive.metadata.readonly']
 # Added drive.metadata.readonly scope for listing purposes
@@ -77,6 +78,27 @@ def upload_pdf_to_drive(service, pdf_filename, folder_id):
     except Exception as e:
         print(f'An unexpected error occurred during upload: {e}')
         return None
+    
+# --- Delete file from Google Drive ---
+def delete_file_from_drive(file_id, service=None):
+    """Deletes a file from Google Drive by its file ID."""
+    try:
+        # If no service passed, authenticate
+        if service is None:
+            service = authenticate_drive()
+            if service is None:
+                print("Failed to authenticate with Google Drive.")
+                return False
+
+        service.files().delete(fileId=file_id).execute()
+        print(f"File with ID '{file_id}' deleted from Google Drive.")
+        return True
+    except HttpError as error:
+        print(f"HTTP error occurred while deleting file ID '{file_id}': {error}")
+        return False
+    except Exception as e:
+        print(f"Unexpected error during deletion of file ID '{file_id}': {e}")
+        return False
 
 # --- Main Execution ---
 if __name__ == '__main__':
