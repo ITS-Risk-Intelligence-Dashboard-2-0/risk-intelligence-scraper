@@ -23,21 +23,21 @@ services:
       timeout: 5s
       retries: 5
 
-  alembic-migrations:
-    build: ./web_scraper
-    command: >
-      bash -c "
-        echo 'DB is ready. Running Alembic migrations...'
-        alembic -c shared/alembic.ini upgrade head
-      "
-    volumes:
-      - ./backend:/app
-      - ./shared:/app/shared
-    env_file:
-      - ./.env
-    depends_on:
-      postgres:
-        condition: service_healthy
+  # alembic-migrations:
+  #   build: ./web_scraper
+  #   command: >
+  #     bash -c "
+  #       echo 'DB is ready. Running Alembic migrations...'
+  #       alembic -c shared/alembic.ini upgrade head
+  #     "
+  #   volumes:
+  #     - ./backend:/app
+  #     - ./shared:/app/shared
+  #   env_file:
+  #     - ./.env
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
 
   django-migrations:
     build: ./web_scraper
@@ -84,8 +84,6 @@ services:
         condition: service_healthy
       django-migrations:
         condition: service_completed_successfully
-      alembic-migrations:
-        condition: service_completed_successfully
 
   celery_beat:
     build: ./web_scraper
@@ -104,8 +102,6 @@ services:
       redis:
         condition: service_healthy
       django-migrations:
-        condition: service_completed_successfully
-      alembic-migrations:
         condition: service_completed_successfully
 
   schedule-api:

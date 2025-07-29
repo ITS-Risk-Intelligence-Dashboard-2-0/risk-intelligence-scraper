@@ -16,7 +16,7 @@ from scraper.pdf_scraper import scrape_pdf_text
 from scraper.retrieval import retrieve_page, retrieve_pdf
 from scraper.maizey_filter import maizey_filter_content
 #from shared.core_lib.db_utils import sqlInsertCategory
-from shared.core_lib.db_utils import establish_connection, retrieve_sources, seed_sources
+from shared.core_lib.db_utils import establish_connection, retrieve_sources, seed_sources, find_table
 
 from gdrive.api import authenticate_drive, upload_pdf_to_drive
 
@@ -49,6 +49,7 @@ def start_scraping_workflow():
     It chains the initial scrape with the main processing task.
     """
     conn, cursor = establish_connection()
+    find_table(cursor)
     seed_sources(conn, cursor)
     retrieve_sources(cursor)
     cursor.close()

@@ -8,4 +8,5 @@ class ArticleScore(models.Model):
     relevance_score = models.FloatField()
 
     class Meta:
+        db_table = 'article_scores'
         unique_together = ('article', 'category')
