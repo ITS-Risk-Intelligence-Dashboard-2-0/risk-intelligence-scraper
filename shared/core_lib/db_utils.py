@@ -51,21 +51,19 @@ def sqlDeleteArticle(article_id):
 
 
 # ------------------ CATEGORY TABLE FUNCTIONS ------------------
-def sqlInsertCategory(category, min_relevance_threshold=0.8, min_wordcount=200):
+def sqlInsertCategory(category, min_relevance_threshold=0.8):
     session = Session()
     try:
         # Insert category with given config
         # If the category already exists, update old entry with the new values
         session.execute(text("""
-            INSERT INTO categories (category_name, min_relevance_threshold, min_wordcount_threshold)
-            VALUES (:name, :relevance, :wordcount)
+            INSERT INTO categories (category_name, min_relevance_threshold)
+            VALUES (:name, :relevance)
             ON CONFLICT (category_name)
-            DO UPDATE SET min_relevance_threshold = EXCLUDED.min_relevance_threshold,
-                          min_wordcount_threshold = EXCLUDED.min_wordcount_threshold
+            DO UPDATE SET min_relevance_threshold = EXCLUDED.min_relevance_threshold
         """), {
             "name": category,
             "relevance": min_relevance_threshold,
-            "wordcount": min_wordcount
         })
         session.commit()
     except Exception as e:
@@ -84,7 +82,7 @@ def sqlUpdateCategory(category, parameter, value):
     session = Session()
     try:
         # Make sure the parameter is valid
-        if parameter not in {"min_relevance_threshold", "min_wordcount_threshold"}:
+        if parameter not in {"min_relevance_threshold"}:
             raise ValueError(f"Invalid parameter: {parameter}")
 
         sql = text(f"""

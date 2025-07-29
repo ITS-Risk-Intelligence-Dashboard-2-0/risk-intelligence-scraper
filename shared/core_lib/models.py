@@ -46,7 +46,6 @@ class Category(Base):
     __tablename__ = 'categories'
     category_name = Column(String, primary_key=True)
     min_relevance_threshold = Column(Float, nullable=False)
-    min_wordcount_threshold = Column(Integer, nullable=False)
 
 
 class Article_Scores(Base):
