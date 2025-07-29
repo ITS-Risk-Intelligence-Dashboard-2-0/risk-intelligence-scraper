@@ -14,14 +14,25 @@ class ArticleViewSet(viewsets.ModelViewSet):
 
         if drive_id:
             try:
+                # Attempt to delete the file from Google Drive first
                 success = delete_file_from_drive(drive_id)
-                self.perform_destroy(instance)
-                if not success:
-                    # Log but don't block deletion
-                    print(f"Warning: Failed to delete file from Google Drive for drive_id={drive_id}")
+                if success:
+                    # If successful, proceed to delete the database record
+                    self.perform_destroy(instance)
+                    return Response(status=status.HTTP_204_NO_CONTENT)
+                else:
+                    # If Drive deletion fails, return an error and do NOT delete from DB
+                    return Response(
+                        {"detail": "Failed to delete file from Google Drive. The article was not deleted."},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    )
             except Exception as e:
-                # Log error but continue deletion anyway
-                print(f"Error deleting file from Google Drive: {e}")
-
-        # self.perform_destroy(instance) # if you want to delete locally regardless if the file is in drive
+                # Handle exceptions during the API call (e.g., network issues)
+                return Response(
+                    {"detail": f"An error occurred while communicating with Google Drive: {e}"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+        
+        # If there's no drive_id, just delete the local record
+        self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
