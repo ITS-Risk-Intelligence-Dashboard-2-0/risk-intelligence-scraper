@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 import dj_database_url
 
 # Load environment variables from .env file
-# This is handled in manage.py and wsgi.py
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -72,15 +72,7 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # The 'pyscopg2' driver is specified for PostgreSQL.
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
-
-# Dynamically adjust DB host if running locally vs. in Docker.
-# This checks for the absence of a /.dockerenv file (indicating a local environment)
-# and replaces the Docker service hostname ('@postgres') with '@localhost'.
-if not os.path.exists('/.dockerenv') and DATABASE_URL and '@postgres' in DATABASE_URL:
-    DATABASE_URL = DATABASE_URL.replace('@postgres', '@localhost', 1)
-
 if not DATABASE_URL:
-    # This block now serves as a fallback if DATABASE_URL is not set at all
     DB_USER = os.environ.get("POSTGRES_USER", "default_user")
     DB_PASSWORD = os.environ.get("POSTGRES_PASSWORD", "default_password")
     DB_HOST = os.environ.get("POSTGRES_HOST", "localhost") # Use POSTGRES_HOST from .env, default to localhost
@@ -123,13 +115,6 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
-
-CELERY_IMPORTS = [
-    'web_scraper.web_scraper_project.run_tasks',
-    'web_scraper.scraper.crawler',
-    'web_scraper.scraper.filter',
-    'web_scraper.scraper.retrieval',
-]
 
 # --- Django REST Framework Configuration ---
 REST_FRAMEWORK = {

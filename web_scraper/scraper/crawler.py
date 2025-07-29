@@ -75,11 +75,10 @@ def playwright_retrieve_urls(page, url, timeout_time, max_retry):
             return []
 
 @shared_task
-def scrape_links(browser):
-    source_hubs = [{
-        "url": "https://www.theiia.org/en/internal-audit-foundation/latest-research-and-products/risk-in-focus/",
-        "depth": 1
-    }]
+def scrape_links(browser, sources_data, crawl_depth):
+    # Convert the source data from the API into the format the crawler expects
+    source_hubs = [{"url": s['url'], "depth": crawl_depth, "target_type": s['target_type']} for s in sources_data]
+    
     processed_urls = set()
 
     found_urls = set()
@@ -94,7 +93,7 @@ def scrape_links(browser):
             # grab an item from the queue
             curr_item = source_hubs.pop()
             curr_source = curr_item["url"]
-            if curr_item["depth"] > 1:
+            if curr_item["depth"] > crawl_depth:
                 continue
             if curr_source in processed_urls:
                 continue
@@ -114,19 +113,25 @@ def scrape_links(browser):
 
                 built_url = build_url(curr_source_parsed, scraped_url_parsed)
 
-                if is_pdf(scraped_url_parsed.path):
+                # Respect the target_type for the source
+                target_type = curr_item.get("target_type", "BOTH")
+                is_pdf_target = is_pdf(scraped_url_parsed.path)
+
+                if is_pdf_target and target_type in ["PDF", "BOTH"]:
                     if built_url not in found_pdfs:
                         found_pdfs.add(built_url)
                         continue
+                
+                if not is_pdf_target and target_type in ["WEBSITE", "BOTH"]:
+                    source_hubs.append({
+                        "url": built_url,
+                        "depth": curr_item["depth"] + 1,
+                        "target_type": target_type
+                    })
 
-                source_hubs.append({
-                    "url": built_url,
-                    "depth": curr_item["depth"] + 1
-                })
-
-                if probably_news(scraped_url_parsed.path):
-                    if built_url not in found_urls:
-                        found_urls.add(built_url)
+                    if probably_news(scraped_url_parsed.path):
+                        if built_url not in found_urls:
+                            found_urls.add(built_url)
 
         page.close()
         browser.close()

@@ -39,7 +39,7 @@ def retrieve_browser_link(browser):
         return None
 
 @shared_task(name="web_scraper.tasks.start_scraping_workflow")
-def start_scraping_workflow():
+def start_scraping_workflow(sources_data, crawl_depth=1):
     """
     This is a meta-task that defines and dispatches the entire workflow.
     It chains the initial scrape with the main processing task.
@@ -50,8 +50,9 @@ def start_scraping_workflow():
         print("ERROR. Could not connect to browser instance!")
         return
 
+    # Pass the sources and crawl_depth to the scrape_links task
     workflow = chain(
-        scrape_links.s(browser_connection),
+        scrape_links.s(browser_connection, sources_data, crawl_depth),
         process_url_list.s(browser_connection)
     )
     workflow.delay()

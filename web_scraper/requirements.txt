@@ -28,7 +28,7 @@ MarkupSafe==3.0.2
 packaging==25.0
 prompt_toolkit==3.0.51
 psycopg2-binary==2.9.10
-pyee==11.1.1
+pyee==11.1.0
 pyppeteer==2.0.0
 python-crontab==3.3.0
 python-dateutil==2.9.0.post0

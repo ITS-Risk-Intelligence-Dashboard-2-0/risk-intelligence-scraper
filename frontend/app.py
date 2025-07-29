@@ -53,6 +53,88 @@ def api_request(method, endpoint, item_id=None, data=None):
         return None
 
 # --- UI Components ---
+def scraper_control_ui():
+    st.title("⚙️ Scraper Control & Configuration")
+    
+    # --- Source Management ---
+    st.header("Manage Scraper Sources")
+    
+    # Fetch existing sources
+    sources = api_request("get", "sources")
+    if sources is None:
+        st.error("Could not load sources from the API.")
+        sources = []
+
+    # Form to add a new source
+    with st.expander("➕ Add New Source", expanded=False):
+        with st.form("new_source_form", clear_on_submit=True):
+            st.text_input("Name", key="new_source_name", placeholder="e.g., Example News")
+            st.text_input("URL", key="new_source_url", placeholder="https://www.example.com/news")
+            st.selectbox("Target Content", ["Both", "PDFs Only", "Websites Only"], key="new_source_target")
+            st.checkbox("Is Active", key="new_source_active", value=True)
+            
+            submitted = st.form_submit_button("Add Source")
+            if submitted:
+                target_map = {
+                    "Both": "BOTH",
+                    "PDFs Only": "PDF",
+                    "Websites Only": "WEBSITE"
+                }
+                new_source = {
+                    "name": st.session_state.new_source_name,
+                    "url": st.session_state.new_source_url,
+                    "target_type": target_map[st.session_state.new_source_target],
+                    "is_active": st.session_state.new_source_active
+                }
+                response = api_request("post", "sources", data=new_source)
+                if response:
+                    st.success(f"Source '{response.get('name')}' added successfully!")
+                    st.rerun()
+                else:
+                    st.error("Failed to add source.")
+
+    # Display existing sources in a table-like format
+    st.subheader("Current Sources")
+    for source in sources:
+        col1, col2, col3, col4, col5 = st.columns([3, 4, 2, 1, 1])
+        with col1:
+            st.text_input("Name", value=source['name'], key=f"name_{source['id']}", disabled=True)
+        with col2:
+            st.text_input("URL", value=source['url'], key=f"url_{source['id']}", disabled=True)
+        with col3:
+            st.text_input("Target", value=source['target_type'], key=f"target_{source['id']}", disabled=True)
+        with col4:
+            if st.button("✏️", key=f"edit_{source['id']}"):
+                # This is a placeholder for a more complex edit modal/form
+                st.info("Edit functionality would be built out here.")
+        with col5:
+            if st.button("🗑️", key=f"delete_{source['id']}"):
+                api_request("delete", "sources", item_id=source['id'])
+                st.rerun()
+    
+    # --- Scraper Control ---
+    st.header("Manual Scraper Control")
+    crawl_depth = st.number_input("Crawl Depth", min_value=0, max_value=5, value=1, help="How many links deep to follow from the source URL. 0 means only the source URL itself.")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("▶️ Start Scraper", type="primary"):
+            response = api_request("post", "scraper/control", data={"crawl_depth": crawl_depth})
+            if response and response.get("status") == "success":
+                st.success(response.get("message"))
+            else:
+                error_message = response.get("message", "Failed to start scraper.") if response else "An unknown error occurred."
+                st.error(error_message)
+                
+    with col2:
+        if st.button("⏹️ Stop Scraper"):
+            response = api_request("delete", "scraper/control")
+            if response and response.get("status") == "success":
+                st.info(response.get("message"))
+            else:
+                error_message = response.get("message", "Failed to stop scraper.") if response else "An unknown error occurred."
+                st.error(error_message)
+
 def schedule_management_ui(registered_tasks):
     st.title("🗓️ Scraping Schedule Manager")
     st.markdown("Schedule the automated web scraping workflow. The system will periodically scan for new information based on the schedule you set.")
@@ -182,7 +264,7 @@ def article_management_ui():
 
 def admin_tools_ui():
     st.title("⚙️ Admin Tools")
-    st.header("Database and Google Drive Seeding")
+    st.subheader("Seed Test Data")
     st.warning("⚠️ **Warning:** This will delete existing test articles before seeding new ones.")
     if st.button("🌱 Seed Test Data", type="primary"):
         with st.spinner("Executing seeding script..."):
@@ -197,28 +279,38 @@ def admin_tools_ui():
 def main_app():
     st.sidebar.title(f"Welcome, {st.session_state.user.get('username', 'User')}!")
     
-    tabs = ["🗓️ Scraping Schedule", "📝 Manage Articles"]
-    if st.session_state.user.get('is_staff', False):
-        tabs.append("⚙️ Admin Tools")
+    is_admin = st.session_state.user.get('is_staff', False)
     
-    selected_tab = st.sidebar.radio("Navigation", tabs, key="navigation")
+    if is_admin:
+        app_pages = {
+            "📰 Article Manager": article_management_ui,
+            "🗓️ Scraping Schedule": schedule_management_ui,
+            "⚙️ Scraper Control": scraper_control_ui,
+            "🛠️ Admin Tools": admin_tools_ui
+        }
+    else:
+        app_pages = {
+            "📰 Article Manager": article_management_ui,
+            "🗓️ Scraping Schedule": schedule_management_ui
+        }
+        
+    selection = st.sidebar.radio("Go to", list(app_pages.keys()))
     
-    st.sidebar.markdown("---")
-    if st.sidebar.button("Logout", use_container_width=True):
-        st.session_state.clear()
-        st.rerun()
+    # Fetch registered tasks once and pass to the relevant UI function
+    if selection == "🗓️ Scraping Schedule":
+        tasks = api_request("get", "task-choices")
+        if tasks:
+            app_pages[selection](tasks)
+        else:
+            st.error("Could not load task choices from the API.")
+    else:
+        app_pages[selection]()
 
-    if selected_tab == "🗓️ Scraping Schedule":
-        registered_tasks = api_request("get", "registered-tasks")
-        if registered_tasks:
-            schedule_management_ui(registered_tasks)
-    elif selected_tab == "📝 Manage Articles":
-        article_management_ui()
-    elif selected_tab == "⚙️ Admin Tools":
-        admin_tools_ui()
+    if st.sidebar.button("Logout"):
+        logout()
 
 def login_ui():
-    st.title("Risk Intelligence Scraper")
+    st.title("Risk Intelligence Scraper Login")
     st.subheader("Please log in to continue")
     with st.form("login_form"):
         username = st.text_input("Username").lower()

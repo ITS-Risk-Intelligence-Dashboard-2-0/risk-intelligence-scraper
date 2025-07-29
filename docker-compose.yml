@@ -110,7 +110,7 @@ services:
 
   schedule-api:
     build: ./backend
-    command: gunicorn core.wsgi:application --bind 0.0.0.0:8000
+    command: gunicorn core.wsgi:application --bind 0.0.0.0:8000 --timeout 180
     volumes:
       - ./backend:/app
       - ./web_scraper:/app/web_scraper
@@ -121,7 +121,7 @@ services:
     env_file:
       - ./.env
     environment:
-      - PYTHONPATH=/app
+      - PYTHONPATH=/app:/app/scripts
       - DJANGO_SETTINGS_MODULE=core.settings
     depends_on:
       postgres:
