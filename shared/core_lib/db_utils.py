@@ -3,6 +3,37 @@ from sqlalchemy.orm import sessionmaker
 from shared.core_lib.models import engine, Article, Sources
 import uuid
 
+import psycopg2
+import os
+
+def establish_connection():
+    DB_USER = os.environ.get("POSTGRES_USER", "default_user")
+    DB_PASSWORD = os.environ.get("POSTGRES_PASSWORD", "default_password")
+    DB_HOST = os.environ.get("POSTGRES_HOST", "localhost")
+    DB_PORT = os.environ.get("POSTGRES_PORT", "5432")
+    DB_NAME = os.environ.get("POSTGRES_DB", "default_db")
+
+    #DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    DATABASE_URL = os.environ.get("DATABASE_URL", "None")
+    print(DATABASE_URL)
+
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        return conn.cursor()
+
+    except:
+        print("Connection to database failed!")
+        return None
+
+def retrieve_sources(cursor):
+    cursor.execute("SELECT * FROM sources;")
+
+    rows = cursor.fetchall()
+
+    print(rows)
+    for row in rows:
+        print(row)
+
 Session = sessionmaker(bind=engine)
 
 # ------------------ ARTICLE TABLE FUNCTIONS ------------------
@@ -250,38 +281,38 @@ def sqlUnassociateSeed(netloc: str, path: str, category: str):
         session.close()
 
 
-def sqlUpdateSeeds(netloc: str, path: str, category: str = None, parameter: str, value):
-    """
-    Updates the config settings on a specified parameter for a given source.
-    Can choose to specify category or do it for the source in general.
-    Only updates one specified parameter at a time.
-    """
-    session = Session()
-    try:
-        # Make sure the parameter is valid
-        if parameter not in {"depth", "target"}:
-            raise ValueError(f"Invalid parameter: {parameter}")
+# def sqlUpdateSeeds(netloc: str, path: str, category: str = None, parameter: str, value):
+#     """
+#     Updates the config settings on a specified parameter for a given source.
+#     Can choose to specify category or do it for the source in general.
+#     Only updates one specified parameter at a time.
+#     """
+#     session = Session()
+#     try:
+#         # Make sure the parameter is valid
+#         if parameter not in {"depth", "target"}:
+#             raise ValueError(f"Invalid parameter: {parameter}")
 
-        if category is None:
-            # If no category is specified, update it for all sources with that netloc and path
-            sql = text(f"""
-                UPDATE sources
-                SET {parameter} = :value
-                WHERE netloc = :netloc AND path = :path
-            """)
-            session.execute(sql, {"value": value, "netloc": netloc, "path": path})
-        else:
-            # If category is specified, update it for the specific source and in that category
-            sql = text(f"""
-                UPDATE sources
-                SET {parameter} = :value
-                WHERE category_name = :category
-                AND netloc = :netloc AND path = :path
-            """)
-            session.execute(sql, {"value": value, "category": category, "netloc": netloc, "path": path})
-        session.commit()
-    except Exception as e:
-        session.rollback()
-        raise e
-    finally:
-        session.close()
+#         if category is None:
+#             # If no category is specified, update it for all sources with that netloc and path
+#             sql = text(f"""
+#                 UPDATE sources
+#                 SET {parameter} = :value
+#                 WHERE netloc = :netloc AND path = :path
+#             """)
+#             session.execute(sql, {"value": value, "netloc": netloc, "path": path})
+#         else:
+#             # If category is specified, update it for the specific source and in that category
+#             sql = text(f"""
+#                 UPDATE sources
+#                 SET {parameter} = :value
+#                 WHERE category_name = :category
+#                 AND netloc = :netloc AND path = :path
+#             """)
+#             session.execute(sql, {"value": value, "category": category, "netloc": netloc, "path": path})
+#         session.commit()
+#     except Exception as e:
+#         session.rollback()
+#         raise e
+#     finally:
+#         session.close()

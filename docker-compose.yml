@@ -140,6 +140,5 @@ services:
     depends_on:
       schedule-api:
         condition: service_started
-
 volumes:
   postgres_data: {}

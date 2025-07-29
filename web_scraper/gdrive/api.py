@@ -5,9 +5,8 @@ from googleapiclient.http import MediaFileUpload
 from googleapiclient.errors import HttpError
 
 # --- Configuration ---
-# PLEASE ADD THE JSON FILE TO THE ROOT OF THE web_scraper directory
-SERVICE_ACCOUNT_FILE = 'web_scraper/risk-intel-db-f19a1b90a785.json'
-FOLDER_ID = '1-3cTCANoUdWEc-jTArx1Kpzy9cpmA5ad'
+SERVICE_ACCOUNT_FILE = './risk-intel-db-f19a1b90a785.json'
+FOLDER_ID = '1HDukz_C9GCu1l23XhOjhqiIn4s6sWRXX'
 SCOPES = ['https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/drive.metadata.readonly']
 # Added drive.metadata.readonly scope for listing purposes
 
@@ -101,7 +100,7 @@ def delete_file_from_drive(file_id, service=None):
         return False
 
 # --- Main Execution ---
-if __name__ == '__main__':
+"""if __name__ == '__main__':
     # 1. Authenticate
     drive_service = authenticate_drive()
 
@@ -124,4 +123,4 @@ if __name__ == '__main__':
         else:
             print("\nCannot proceed with upload as folder access failed during diagnostics.")
     else:
-        print('Google Drive authentication failed.')
+        print('Google Drive authentication failed.')"""
