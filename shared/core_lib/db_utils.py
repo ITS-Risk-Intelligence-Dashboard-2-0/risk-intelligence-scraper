@@ -6,6 +6,14 @@ import uuid
 import psycopg2
 import os
 
+def seed_sources(conn, cursor):
+    query = "INSERT INTO sources (netloc, path, depth, target) VALUES (%s, %s, %s, %s)"
+    values = ("www.gallup.com", "/corporate/470660/reports-perspective-papers.aspx", 1, "website")
+
+    cursor.execute(query, values)
+
+    conn.commit()
+
 def establish_connection():
     DB_USER = os.environ.get("POSTGRES_USER", "default_user")
     DB_PASSWORD = os.environ.get("POSTGRES_PASSWORD", "default_password")
@@ -19,7 +27,7 @@ def establish_connection():
 
     try:
         conn = psycopg2.connect(DATABASE_URL)
-        return conn.cursor()
+        return (conn, conn.cursor())
 
     except:
         print("Connection to database failed!")

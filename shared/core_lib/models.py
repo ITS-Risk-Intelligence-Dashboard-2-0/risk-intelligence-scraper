@@ -58,7 +58,7 @@ class Article_Scores(Base):
 class Sources(Base):
     __tablename__ = 'sources'
     netloc = Column(String, primary_key=True)
-    category = Column(String, ForeignKey("categories.category_name", ondelete = "CASCADE"), primary_key=True) # a topic that the source is trusted for
+    #category = Column(String, ForeignKey("categories.category_name", ondelete = "CASCADE"), primary_key=True) # a topic that the source is trusted for
     path = Column(String, nullable=False)
     depth = Column(Integer, default=0) # depth of the source in the hierarchy, 0 for top-level sources
     target = Column(String, nullable=True) # pdf, website, etc

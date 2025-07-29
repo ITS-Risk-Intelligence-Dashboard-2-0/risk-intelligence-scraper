@@ -32,7 +32,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
                     {"detail": f"An error occurred while communicating with Google Drive: {e}"},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
-        
+
         # If there's no drive_id, just delete the local record
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)

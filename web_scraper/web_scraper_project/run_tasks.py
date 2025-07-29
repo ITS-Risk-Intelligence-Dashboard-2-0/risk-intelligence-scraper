@@ -16,7 +16,7 @@ from scraper.pdf_scraper import scrape_pdf_text
 from scraper.retrieval import retrieve_page, retrieve_pdf
 from scraper.maizey_filter import maizey_filter_content
 #from shared.core_lib.db_utils import sqlInsertCategory
-from shared.core_lib.db_utils import establish_connection, retrieve_sources
+from shared.core_lib.db_utils import establish_connection, retrieve_sources, seed_sources
 
 from gdrive.api import authenticate_drive, upload_pdf_to_drive
 
@@ -48,8 +48,11 @@ def start_scraping_workflow():
     This is a meta-task that defines and dispatches the entire workflow.
     It chains the initial scrape with the main processing task.
     """
-    cursor = establish_connection()
+    conn, cursor = establish_connection()
+    seed_sources(conn, cursor)
     retrieve_sources(cursor)
+    cursor.close()
+    conn.close()
 
     browser_connection = retrieve_browser_link("browser")
     if browser_connection is None:
