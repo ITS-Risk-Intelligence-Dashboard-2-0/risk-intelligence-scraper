@@ -51,7 +51,7 @@ def start_scraping_workflow():
     conn, cursor = establish_connection()
     find_table(cursor)
     seed_sources(conn, cursor)
-    retrieve_sources(cursor)
+    source_hubs = retrieve_sources(cursor)
     cursor.close()
     conn.close()
 
@@ -80,12 +80,12 @@ def start_scraping_workflow():
     #     "target": "both",
     #     "depth": 1
     # }]
-    source_hubs = [{
-        "netloc": "www.gallup.com",
-        "path": "/corporate/470660/reports-perspective-papers.aspx",
-        "target": "website",
-        "depth": 1
-    }]
+    # source_hubs = [{
+    #     "netloc": "www.gallup.com",
+    #     "path": "/corporate/470660/reports-perspective-papers.aspx",
+    #     "target": "website",
+    #     "depth": 1
+    # }]
 
     workflow = chain(
         scrape_links.s(browser_connection, source_hubs),

@@ -23,7 +23,6 @@ def establish_connection():
 
     #DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     DATABASE_URL = os.environ.get("DATABASE_URL", "None")
-    print(DATABASE_URL)
 
     try:
         conn = psycopg2.connect(DATABASE_URL)
@@ -41,13 +40,11 @@ def find_table(cursor):
     print(rows)
 
 def retrieve_sources(cursor):
-    cursor.execute("SELECT * FROM sources;")
+    cursor.execute("SELECT netloc, path, depth, target FROM sources;")
 
     rows = cursor.fetchall()
 
-    print(rows)
-    for row in rows:
-        print(row)
+    return [{"netloc": v[0], "path": v[1], "depth": v[2], "target": v[3]} for v in rows]
 
 #Session = sessionmaker(bind=engine)
 
