@@ -3,9 +3,11 @@ import streamlit as st
 import requests
 import pandas as pd
 import json
+from urllib.parse import urlparse, urlunparse
 from datetime import datetime
 from zoneinfo import ZoneInfo
 import os
+import re
 
 # --- Page & API Configuration ---
 st.set_page_config(layout="wide", page_title="Risk Intelligence Scraper")
@@ -68,8 +70,8 @@ def scraper_control_ui():
     # Form to add a new source
     with st.expander("➕ Add New Source", expanded=False):
         with st.form("new_source_form", clear_on_submit=True):
-            st.text_input("Name", key="new_source_name", placeholder="e.g., Example News")
             st.text_input("URL", key="new_source_url", placeholder="https://www.example.com/news")
+            st.number_input("Depth", key="new_source_depth", value=1, step=1)
             st.selectbox("Target Content", ["Both", "PDFs Only", "Websites Only"], key="new_source_target")
             st.checkbox("Is Active", key="new_source_active", value=True)
             
@@ -80,29 +82,40 @@ def scraper_control_ui():
                     "PDFs Only": "PDF",
                     "Websites Only": "WEBSITE"
                 }
-                new_source = {
-                    "name": st.session_state.new_source_name,
-                    "url": st.session_state.new_source_url,
-                    "target_type": target_map[st.session_state.new_source_target],
-                    "is_active": st.session_state.new_source_active
-                }
-                response = api_request("post", "sources", data=new_source)
-                if response:
-                    st.success(f"Source '{response.get('name')}' added successfully!")
-                    st.rerun()
+
+                url_match = re.match(r'^https://[-a-zA-Z0-9.]+(/[a-zA-Z0-9\-=&?\./]*)?$', st.session_state.new_source_url.strip())
+                parsed_url = urlparse(st.session_state.new_source_url)
+
+                if url_match:
+                    new_source = {
+                        "netloc": parsed_url.netloc,
+                        "path": parsed_url.path,
+                        "depth": st.session_state.new_source_depth,
+                        "target": target_map[st.session_state.new_source_target],
+                        "is_active": st.session_state.new_source_active
+                    }
+                    response = api_request("post", "sources", data=new_source)
+                    if response:
+                        st.success(f"Source '{response.get('name')}' added successfully!")
+                        st.rerun()
+                    else:
+                        st.error("Failed to add source.")
                 else:
-                    st.error("Failed to add source.")
+                    st.error(url_match)
+                    st.error(f"Invalid Url: {st.session_state.new_source_url} failed url validation check!")
 
     # Display existing sources in a table-like format
     st.subheader("Current Sources")
     for source in sources:
-        col1, col2, col3, col4, col5 = st.columns([3, 4, 2, 1, 1])
+        source_url = urlunparse(("https", source["netloc"], source["path"], '', '', ''))
+
+        col1, col2, col3, col4, col5 = st.columns([5, 3, 1, 1, 1])
         with col1:
-            st.text_input("Name", value=source['name'], key=f"name_{source['id']}", disabled=True)
+            st.text_input("Url", value=source_url, key=f"name_{source['id']}", disabled=True)
         with col2:
-            st.text_input("URL", value=source['url'], key=f"url_{source['id']}", disabled=True)
+            st.text_input("Target Content", value=source['target'], key=f"target_{source['id']}", disabled=True)
         with col3:
-            st.text_input("Target", value=source['target_type'], key=f"target_{source['id']}", disabled=True)
+            st.text_input("Depth", value=source['depth'], key=f"url_{source['id']}", disabled=True)
         with col4:
             if st.button("✏️", key=f"edit_{source['id']}"):
                 # This is a placeholder for a more complex edit modal/form
@@ -114,12 +127,11 @@ def scraper_control_ui():
     
     # --- Scraper Control ---
     st.header("Manual Scraper Control")
-    crawl_depth = st.number_input("Crawl Depth", min_value=0, max_value=5, value=1, help="How many links deep to follow from the source URL. 0 means only the source URL itself.")
     
     col1, col2 = st.columns(2)
     with col1:
         if st.button("▶️ Start Scraper", type="primary"):
-            response = api_request("post", "scraper/control", data={"crawl_depth": crawl_depth})
+            response = api_request("post", "scraper/control")
             if response and response.get("status") == "success":
                 st.success(response.get("message"))
             else:

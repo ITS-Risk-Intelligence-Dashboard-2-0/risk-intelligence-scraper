@@ -40,7 +40,12 @@ class ArticleViewSet(viewsets.ModelViewSet):
                     return Response({"detail": f"A Google Drive API error occurred: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             except Exception as e:
-                return Response({"detail": f"An unexpected error occurred during deletion: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
+                # Handle exceptions during the API call (e.g., network issues)
+                return Response(
+                    {"detail": f"An error occurred while communicating with Google Drive: {e}"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+
+        # If there's no drive_id, just delete the local record
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)

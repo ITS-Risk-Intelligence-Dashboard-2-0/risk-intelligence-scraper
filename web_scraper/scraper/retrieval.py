@@ -3,6 +3,9 @@ from playwright.sync_api import sync_playwright
 import requests
 import uuid
 
+#from gdrive.api import authenticate_drive, upload_pdf_to_drive
+from gdrive.api import GoogleDriveService
+
 def install_page_as_pdf(page, url, path, timeout_time, max_retry):
     for _ in range(max_retry):
         try:
@@ -12,8 +15,9 @@ def install_page_as_pdf(page, url, path, timeout_time, max_retry):
             return True
         except TimeoutError:
             continue
-        except Exception:
-            return False
+        except Exception as e:
+            print(f"{e} RETRYING ...")
+            continue
 
     try:
         page.goto(url, wait_until="load")
@@ -21,34 +25,50 @@ def install_page_as_pdf(page, url, path, timeout_time, max_retry):
 
         return True
     except:
+        print(f"{e}")
         return False
 
 @shared_task
-def retrieve_page(url_batch, browser):
+def retrieve_page(pages_batch, browser):
     with sync_playwright() as p:
         browser = p.chromium.connect_over_cdp(browser)
         page = browser.new_page()
 
-        for url in url_batch:
+        for url, category, _ in pages_batch:
             install_filename = str(uuid.uuid4()).replace("-", "_")
+            install_filename = f"{category.replace(' ', '')}--{install_filename}"
 
             install_page_as_pdf(page, url, f"/app/pages/{install_filename}.pdf", 5000, 2)
+
+            gdrive = GoogleDriveService()
+            gdrive.upload_file("1dR0baehnfs4-sctTxdYDriC9d-4lo1gL", f"{install_filename}.pdf", f"/app/pages/{install_filename}.pdf")
 
             print(f"INSTALLED {url} => {install_filename}.pdf")
 
         page.close()
         browser.close()
 
+    return len(pages_batch)
+
 @shared_task
-def retrieve_pdf(urls):
-    response = requests.get(urls[0])
+def retrieve_pdf(pages):
+    if len(pages) == 0:
+        return
+    print("FETCHING")
+    url, category, content = pages[0]
+
+    response = requests.get(url)
     status = response.status_code
     if status // 100 != 2:
-        print(f"ERROR retrieving pdf from {urls[0]}")
+        print(f"ERROR retrieving pdf from {url}")
         return None
 
     install_filename = str(uuid.uuid4()).replace("-", "_")
-    with open(f"/app/pages/fff{install_filename}.pdf", "wb") as f:
+    install_filename = f"{category.replace(' ', '')}--{install_filename}"
+
+    with open(f"/app/pages/{install_filename}.pdf", "wb") as f:
         f.write(response.content)
 
+    gdrive = GoogleDriveService()
+    gdrive.upload_file("1dR0baehnfs4-sctTxdYDriC9d-4lo1gL", f"{install_filename}.pdf", f"/app/pages/{install_filename}.pdf")
     print("PDF successfully written")

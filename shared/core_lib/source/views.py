@@ -9,5 +9,5 @@ class SourceViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows sources to be viewed or edited.
     """
-    queryset = Source.objects.all().order_by('name')
+    queryset = Source.objects.all().order_by('netloc')
     serializer_class = SourceSerializer

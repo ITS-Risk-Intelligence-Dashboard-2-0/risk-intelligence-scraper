@@ -71,18 +71,29 @@ def playwright_retrieve_urls(page, url, timeout_time, max_retry):
         except TimeoutError:
             continue
         except Exception as e:
-            print(e)
-            return []
+            print(f"{e} RETRYING ...")
+            continue
+
+    try:
+        page.goto(url, wait_until="load", timeout=timeout_time)
+        urls = page.eval_on_selector_all(
+            "a",
+            "elems => elems.map(elem => elem.href)"
+        )
+
+        return urls
+    except Exception as e:
+        print(f"{e}")
+
+    return []
 
 @shared_task
-def scrape_links(browser, sources_data, crawl_depth):
-    # Convert the source data from the API into the format the crawler expects
-    source_hubs = [{"url": s['url'], "depth": crawl_depth, "target_type": s['target_type']} for s in sources_data]
-    
+def scrape_links(browser, source_hubs):
     processed_urls = set()
 
     found_urls = set()
     found_pdfs = set()
+    excluded_urls = set()
 
     with sync_playwright() as p:
         # initialize browser and page for crawling
@@ -92,17 +103,19 @@ def scrape_links(browser, sources_data, crawl_depth):
         while len(source_hubs) > 0:
             # grab an item from the queue
             curr_item = source_hubs.pop()
-            curr_source = curr_item["url"]
-            if curr_item["depth"] > crawl_depth:
+            print(curr_item)
+            curr_source = urlunparse(("https", curr_item["netloc"], curr_item["path"], '', '', ''))
+            if curr_item["depth"] <= 0:
                 continue
             if curr_source in processed_urls:
                 continue
+            print(f"CRAWLING {curr_source}")
             
             processed_urls.add(curr_source)
 
             curr_source_parsed = urlparse(curr_source)
 
-            urls = playwright_retrieve_urls(page, curr_source, 60000, 3)
+            urls = playwright_retrieve_urls(page, curr_source, 5000, 2)
 
             # analyze the urls
             for url in urls:
@@ -114,27 +127,29 @@ def scrape_links(browser, sources_data, crawl_depth):
                 built_url = build_url(curr_source_parsed, scraped_url_parsed)
 
                 # Respect the target_type for the source
-                target_type = curr_item.get("target_type", "BOTH")
+                target_type = curr_item.get("target", "BOTH")
                 is_pdf_target = is_pdf(scraped_url_parsed.path)
 
                 if is_pdf_target and target_type in ["PDF", "BOTH"]:
                     if built_url not in found_pdfs:
                         found_pdfs.add(built_url)
                         continue
-                
-                if not is_pdf_target and target_type in ["WEBSITE", "BOTH"]:
-                    source_hubs.append({
-                        "url": built_url,
-                        "depth": curr_item["depth"] + 1,
-                        "target_type": target_type
-                    })
 
-                    if probably_news(scraped_url_parsed.path):
-                        if built_url not in found_urls:
-                            found_urls.add(built_url)
+                source_hubs.append({
+                    "netloc": scraped_url_parsed.netloc,
+                    "path": scraped_url_parsed.path,
+                    "depth": curr_item["depth"] - 1,
+                    "target": curr_item["target"]
+                })
+
+                if probably_news(scraped_url_parsed.path) and target_type in ["BOTH", "WEBSITE"]:
+                    if built_url not in found_urls:
+                        found_urls.add(built_url)
+                elif built_url not in excluded_urls:
+                    excluded_urls.add(built_url)
 
         page.close()
         browser.close()
 
     print(f"Scraping complete! Found {len(found_urls)} potential news URLs and {len(found_pdfs)} pdfs!")
-    return (list(found_urls), list(found_pdfs))
+    return (list(found_urls), list(found_pdfs), list(excluded_urls - found_urls))

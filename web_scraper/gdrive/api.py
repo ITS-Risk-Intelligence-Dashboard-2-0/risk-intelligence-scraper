@@ -8,7 +8,7 @@ from googleapiclient.errors import HttpError
 class GoogleDriveService:
     """A service class to encapsulate all Google Drive API interactions."""
 
-    def __init__(self, service_account_file='web_scraper/risk-intel-db-f19a1b90a785.json'):
+    def __init__(self, service_account_file='./risk-intel-db-f19a1b90a785.json'):
         self.service = self._authenticate(service_account_file)
 
     def _authenticate(self, sa_file):

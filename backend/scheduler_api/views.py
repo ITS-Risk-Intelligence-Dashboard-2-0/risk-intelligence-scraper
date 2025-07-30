@@ -96,11 +96,16 @@ class ScraperControlView(APIView):
     """
     permission_classes = [IsAdminUser] # Only admins can control the scraper
 
+    # TODO: code need refactoring, very messy, likely contain dead codes
     def post(self, request, *args, **kwargs):
         """
         Starts the scraping workflow.
         """
-        crawl_depth = request.data.get('crawl_depth', 1) # Default crawl depth to 1
+        inspector = celery_app.control.inspect()
+        active_tasks = inspector.active()
+        for task_name, task in active_tasks.items():
+            if len(task) > 0:
+                return Response({"status": "info", "message": "The scraper is already running!"})
         
         # Fetch active sources from the database
         active_sources = Source.objects.filter(is_active=True)
@@ -111,7 +116,7 @@ class ScraperControlView(APIView):
             )
         
         sources_data = SourceSerializer(active_sources, many=True).data
-        task_args = [sources_data, crawl_depth]
+        task_args = [sources_data]
 
         try:
             # Create a default interval schedule (e.g., run every 1 day)
@@ -143,13 +148,14 @@ class ScraperControlView(APIView):
         except Exception as e:
             return Response({"status": "error", "message": f"Failed to start scraping task: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    # TODO: code need refactoring, very messy, likely contain dead codes
     def delete(self, request, *args, **kwargs):
         """
         Stops a running scraping workflow by finding and revoking the task
         associated with the manual run.
         """
         try:
-            task = PeriodicTask.objects.get(name=MANUAL_SCRAPER_TASK_NAME)
+            #task = PeriodicTask.objects.get(name=MANUAL_SCRAPER_TASK_NAME)
             
             # Find the active task by inspecting the workers.
             # This is a more advanced and reliable method than relying on session.
@@ -159,24 +165,26 @@ class ScraperControlView(APIView):
             if not active_tasks:
                  return Response({"status": "info", "message": "No active workers found. The scraper may already be stopped."})
 
-            task_revoked = False
-            for worker, tasks in active_tasks.items():
-                for active_task in tasks:
-                    if active_task['name'] == task.task:
-                        # Found the task, revoke it.
-                        celery_app.control.revoke(active_task['id'], terminate=True)
-                        task_revoked = True
+
+            num_tasks = 0
+            for _, tasks in active_tasks.items():
+                num_tasks += len(tasks)
+                for task in tasks:
+                    celery_app.control.revoke(task["id"], terminate=True, signal='SIGTERM')
+
+            if num_tasks == 0:
+                return Response({"status": "info", "message": "No tasks are currently running!"})
             
-            if task_revoked:
+            #if task_revoked:
                  # Clean up the one-off task from the database
-                task.delete()
-                return Response({"status": "success", "message": "Stop signal sent to the running scraper task."})
-            else:
-                return Response({"status": "info", "message": "Scraper task is not currently running."})
+            #task.delete()
+            return Response({"status": "success", "message": "Stop signal sent to the running scraper task."})
+            #else:
+                #return Response({"status": "info", "message": "Scraper task is not currently running."})
 
         except PeriodicTask.DoesNotExist:
             return Response(
-                {"status": "error", "message": "No manual scraping task has been run yet."},
+                {"status": "error", "message": "No scraping task has been run yet."},
                 status=status.HTTP_400_BAD_REQUEST
             )
         except Exception as e:
