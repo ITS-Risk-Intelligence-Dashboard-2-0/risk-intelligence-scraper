@@ -25,43 +25,45 @@ def maizey_filter_content(page, categories_config):
     relevant_pages = []
 
     try:
-        #conversation_pk = create_conversation(project_pk, api_key)
+        conversation_pk = create_conversation(project_pk, api_key)
         for url, content in zip(urls, contents):
             reduction, content = filter_non_ascii(content)
+
+            # if content contains too many non-ASCII characters
             if reduction > 0.3:
-                relevant_pages.append((url, "none", content))
                 continue
 
             content = f"[begin] {content} [end]"
-            #response = call_api(project_pk, conversation_pk, api_key, content)
+            response = call_api(project_pk, conversation_pk, api_key, content)
 
-            #json_response = json.loads(response)
+            json_response = json.loads(response)
 
-            # if type(json_response) is not list:
-            #     raise MaizeyImproperJson(f"Error: Maizey filter returned improper json format {json_response}")
+            if type(json_response) is not list:
+                raise MaizeyImproperJson(f"Error: Maizey filter returned improper json format {json_response}")
 
-            # highest_score = 0
-            # best_category = ""
-            # for category_item in json_response:
-            #     if type(category_item) is not dict:
-            #         raise MaizeyImproperJson(f"Error: Maizey filter returned improper json format {json_response}")
+            highest_score = 0
+            best_category = ""
+            for category_item in json_response:
+                if type(category_item) is not dict:
+                    raise MaizeyImproperJson(f"Error: Maizey filter returned improper json format {json_response}")
 
-            #     if category_item.get("name") is None or category_item.get("confidence") is None:
-            #         raise MaizeyImproperJson(f"Error: Maizey filter returned improper json format {json_response}")
+                if category_item.get("name") is None or category_item.get("confidence") is None:
+                    raise MaizeyImproperJson(f"Error: Maizey filter returned improper json format {json_response}")
 
-            #     if category_item["confidence"] > highest_score:
-            #         highest_score = category_item["confidence"]
-            #         best_category = category_item["name"]
+                if category_item["confidence"] > highest_score:
+                    highest_score = category_item["confidence"]
+                    best_category = category_item["name"]
 
-            # if category_item["name"] not in categories_config:
-            #     relevant_pages.append((url, "none", content))
-            #     continue
+            # if best category is not in the list of categories
+            if best_category not in categories_config:
+                continue
 
-            # if highest_score < categories_config[category_item["name"]]["min_relevance_threshold"]:
-            #     relevant_pages.append((url, "none", content))
-            #     continue
+            # if all the category scores are too low
+            if highest_score < categories_config[best_category]["min_relevance_threshold"]:
+                continue
 
-            relevant_pages.append((url, "none", content))
+            # append the page
+            relevant_pages.append((url, (best_category, categories_config[best_category]["folder"]), content))
 
         return relevant_pages
 

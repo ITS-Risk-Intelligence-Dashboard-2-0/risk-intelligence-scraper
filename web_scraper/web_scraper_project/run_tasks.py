@@ -1,6 +1,7 @@
 import socket
 import requests
 import os
+import json
 from urllib.parse import urlparse
 
 from celery import shared_task, chain, group
@@ -78,124 +79,128 @@ def process_url_list(discovered_paths, browser_connection):
     print(f"Number of urls: {len(urls)}")
     print(f"Number excluded: {len(excluded)}")
 
-    categories_config = [
-        {
-            "category_name": "AI",
-            "min_relevance_threshold": 0.8,
-        },
-        {
-            "category_name": "Compliance",
-            "min_relevance_threshold": 0.8,
-        },
-        {
-            "category_name": "Crisis Management",
-            "min_relevance_threshold": 0.8,
-        },
-        {
-            "category_name": "Cryptocurrency",
-            "min_relevance_threshold": 0.8,
-        },
-        {
-            "category_name": "Culture",
-            "min_relevance_threshold": 0.8,
-        },
-        {
-            "category_name": "Cybersecurity",
-            "min_relevance_threshold": 0.8,
-        },
-        {
-            "category_name": "Data Privacy",
-            "min_relevance_threshold": 0.8,
-        },
-        {
-            "category_name": "DEI",
-            "min_relevance_threshold": 0.8,
-        },
-        {
-            "category_name": "Emerging",
-            "min_relevance_threshold": 0.8,
-        },
-        {
-            "category_name": "ESG",
-            "min_relevance_threshold": 0.8,
-        },
-        {
-            "category_name": "Geopolitical",
-            "min_relevance_threshold": 0.8,
-        },
-        {
-            "category_name": "Healthcare",
-            "min_relevance_threshold": 0.8,
-        },
-        {
-            "category_name": "International",
-            "min_relevance_threshold": 0.8,
-        },
-        {
-            "category_name": "Mental Health",
-            "min_relevance_threshold": 0.8,
-        },
-        {
-            "category_name": "NIL",
-            "min_relevance_threshold": 0.8,
-        },
-        {
-            "category_name": "Physical Security Threat",
-            "min_relevance_threshold": 0.8,
-        },
-        {
-            "category_name": "Policy",
-            "min_relevance_threshold": 0.8,
-        },
-        {
-            "category_name": "Post-Election",
-            "min_relevance_threshold": 0.8,
-        },
-        {
-            "category_name": "Prop 2",
-            "min_relevance_threshold": 0.8,
-        },
-        {
-            "category_name": "Residential Life",
-            "min_relevance_threshold": 0.8,
-        },
-        {
-            "category_name": "Safety",
-            "min_relevance_threshold": 0.8,
-        },
-        {
-            "category_name": "Sexual Misconduct",
-            "min_relevance_threshold": 0.8,
-        },
-        {
-            "category_name": "Succession Planning",
-            "min_relevance_threshold": 0.8,
-        },
-        {
-            "category_name": "Supply Chain",
-            "min_relevance_threshold": 0.8,
-        },
-        {
-            "category_name": "Third Parties",
-            "min_relevance_threshold": 0.8,
-        },
-        {
-            "category_name": "Title IX",
-            "min_relevance_threshold": 0.8,
-        },
-        {
-            "category_name": "Weather",
-            "min_relevance_threshold": 0.8,
-        },
-        {
-            "category_name": "Workforce Management",
-            "min_relevance_threshold": 0.8,
-        },
-        {
-            "category_name": "Profiles",
-            "min_relevance_threshold": 0.8,
-        }
-    ]
+    categories_config = []
+    with open("./categories_config.json", "r") as f:
+        categories_config = json.load(f)
+
+    # categories_config = [
+    #     {
+    #         "category_name": "AI",
+    #         "min_relevance_threshold": 0.8,
+    #     },
+    #     {
+    #         "category_name": "Compliance",
+    #         "min_relevance_threshold": 0.8,
+    #     },
+    #     {
+    #         "category_name": "Crisis Management",
+    #         "min_relevance_threshold": 0.8,
+    #     },
+    #     {
+    #         "category_name": "Cryptocurrency",
+    #         "min_relevance_threshold": 0.8,
+    #     },
+    #     {
+    #         "category_name": "Culture",
+    #         "min_relevance_threshold": 0.8,
+    #     },
+    #     {
+    #         "category_name": "Cybersecurity",
+    #         "min_relevance_threshold": 0.8,
+    #     },
+    #     {
+    #         "category_name": "Data Privacy",
+    #         "min_relevance_threshold": 0.8,
+    #     },
+    #     {
+    #         "category_name": "DEI",
+    #         "min_relevance_threshold": 0.8,
+    #     },
+    #     {
+    #         "category_name": "Emerging",
+    #         "min_relevance_threshold": 0.8,
+    #     },
+    #     {
+    #         "category_name": "ESG",
+    #         "min_relevance_threshold": 0.8,
+    #     },
+    #     {
+    #         "category_name": "Geopolitical",
+    #         "min_relevance_threshold": 0.8,
+    #     },
+    #     {
+    #         "category_name": "Healthcare",
+    #         "min_relevance_threshold": 0.8,
+    #     },
+    #     {
+    #         "category_name": "International",
+    #         "min_relevance_threshold": 0.8,
+    #     },
+    #     {
+    #         "category_name": "Mental Health",
+    #         "min_relevance_threshold": 0.8,
+    #     },
+    #     {
+    #         "category_name": "NIL",
+    #         "min_relevance_threshold": 0.8,
+    #     },
+    #     {
+    #         "category_name": "Physical Security Threat",
+    #         "min_relevance_threshold": 0.8,
+    #     },
+    #     {
+    #         "category_name": "Policy",
+    #         "min_relevance_threshold": 0.8,
+    #     },
+    #     {
+    #         "category_name": "Post-Election",
+    #         "min_relevance_threshold": 0.8,
+    #     },
+    #     {
+    #         "category_name": "Prop 2",
+    #         "min_relevance_threshold": 0.8,
+    #     },
+    #     {
+    #         "category_name": "Residential Life",
+    #         "min_relevance_threshold": 0.8,
+    #     },
+    #     {
+    #         "category_name": "Safety",
+    #         "min_relevance_threshold": 0.8,
+    #     },
+    #     {
+    #         "category_name": "Sexual Misconduct",
+    #         "min_relevance_threshold": 0.8,
+    #     },
+    #     {
+    #         "category_name": "Succession Planning",
+    #         "min_relevance_threshold": 0.8,
+    #     },
+    #     {
+    #         "category_name": "Supply Chain",
+    #         "min_relevance_threshold": 0.8,
+    #     },
+    #     {
+    #         "category_name": "Third Parties",
+    #         "min_relevance_threshold": 0.8,
+    #     },
+    #     {
+    #         "category_name": "Title IX",
+    #         "min_relevance_threshold": 0.8,
+    #     },
+    #     {
+    #         "category_name": "Weather",
+    #         "min_relevance_threshold": 0.8,
+    #     },
+    #     {
+    #         "category_name": "Workforce Management",
+    #         "min_relevance_threshold": 0.8,
+    #     },
+    #     {
+    #         "category_name": "Profiles",
+    #         "min_relevance_threshold": 0.8,
+    #     }
+    # ]
 
     # dispatch url scraping pipeline
     batched_urls = batch_items(urls, 1)

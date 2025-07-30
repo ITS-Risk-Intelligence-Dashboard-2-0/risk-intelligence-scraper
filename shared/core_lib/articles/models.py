@@ -6,7 +6,7 @@ class Article(models.Model):
     drive_id = models.CharField(max_length=100, blank=True, null=True)
     url = models.URLField()  # original url
     creation_date = models.DateTimeField(auto_now_add=True)
-    approved = models.BooleanField(default=False)
+    approved = models.BooleanField(default=True)
 
     def __str__(self):
         return self.url

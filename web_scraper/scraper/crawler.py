@@ -23,7 +23,7 @@ def same_domain(netloc1, netloc2):
 
 def analyze_last_path(chunk):
     words = chunk.split("-")
-    if len(words) < 3:
+    if len(words) < 2:
         return False
 
     for word in words:
@@ -48,10 +48,7 @@ def probably_news(path):
     path_chunks = path.rstrip("/").split("/")
     is_article = analyze_last_path(path_chunks[-1])
 
-    if not is_article:
-        return None
-
-    return "/".join(path_chunks[:-1])
+    return is_article
 
 def is_pdf(path):
     trimmed = path.rstrip("/")
@@ -103,7 +100,6 @@ def scrape_links(browser, source_hubs):
         while len(source_hubs) > 0:
             # grab an item from the queue
             curr_item = source_hubs.pop()
-            print(curr_item)
             curr_source = urlunparse(("https", curr_item["netloc"], curr_item["path"], '', '', ''))
             if curr_item["depth"] <= 0:
                 continue

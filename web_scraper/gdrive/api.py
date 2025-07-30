@@ -154,9 +154,15 @@ class GoogleDriveService:
     def delete_file(self, file_id):
         """Deletes a file from Google Drive by its file ID."""
         if not self.service: return False
+
+        print(self.get_file_metadata(file_id))
         try:
             # supportsAllDrives=True is CRITICAL for operating on files in Shared Drives
-            self.service.files().delete(fileId=file_id, supportsAllDrives=True).execute()
+            self.service.files().update(
+                fileId=file_id,
+                body={'trashed': True},
+                supportsAllDrives=True
+            ).execute()
             print(f"File or folder with ID '{file_id}' successfully deleted from Google Drive.")
             return True
         except HttpError as e:

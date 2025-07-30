@@ -1,0 +1,118 @@
+{
+    "AI": {
+        "min_relevance_threshold": 0.8,
+        "folder": "1nH1CvWUCi965l1fHR4rDMtLgphMxbFJK"
+    },
+    "Compliance": {
+        "min_relevance_threshold": 0.8,
+        "folder": "1HXxMofzbgOA5VhhOx1J1yiOIV33b3wa7"
+    },
+    "Crisis Management": {
+        "min_relevance_threshold": 0.8,
+        "folder": "1LVe-OcFVaXfV2MywRSSrtRSDPyRZgGB-"
+    },
+    "Cryptocurrency": {
+        "min_relevance_threshold": 0.8,
+        "folder": "1jTs5tRoPMRy5HZK9xF6jvbSFkptCD984"
+    },
+    "Culture": {
+        "min_relevance_threshold": 0.8,
+        "folder": "1m7YuxMN6i03lzvikvvxoscVFhxS2wR-q"
+    },
+    "Cybersecurity": {
+        "min_relevance_threshold": 0.8,
+        "folder": "1RmAc3RqR_qe3HPeDsJDt6PbT_S5u12RP"
+    },
+    "Data Privacy": {
+        "min_relevance_threshold": 0.8,
+        "folder": "1YPDDCHIViosP_vyMjjQRIlWckA8qrxBc"
+    },
+    "DEI": {
+        "min_relevance_threshold": 0.8,
+        "folder": "1owZY4deO1UGcdnXJ7aSDzaW2nSQrRplO"
+    },
+    "Emerging": {
+        "min_relevance_threshold": 0.8,
+        "folder": "1zUHoZzrVAxQh_OOX0wo5MoieHHIMV5-a"
+    },
+    "ESG": {
+        "min_relevance_threshold": 0.8,
+        "folder": "1YBl_6o-2-ptIpvE5uwa-4gxoe-bAsb66"
+    },
+    "Geopolitical": {
+        "min_relevance_threshold": 0.8,
+        "folder": "1G9BBdyqNxZb070V7ysn0wXFVuB-3Kmex"
+    },
+    "Healthcare": {
+        "min_relevance_threshold": 0.8,
+        "folder": "1uZakuS7MWTFhJY-92gAxbc0-pDTthdh3"
+    },
+    "International": {
+        "min_relevance_threshold": 0.8,
+        "folder": "1SVW0EYpXi0ggD3tFUpZU-cRUu96KR0j2"
+    },
+    "Mental Health": {
+        "min_relevance_threshold": 0.8,
+        "folder": "1JaFYjuoRO9FKW9roT3Vb1u0Y3qaCvfwC"
+    },
+    "NIL": {
+        "min_relevance_threshold": 0.8,
+        "folder": "1SfPMdGDTkdprzAex4UfIHnbq_949E4Vn"
+    },
+    "Physical Security Threat": {
+        "min_relevance_threshold": 0.8,
+        "folder": "1FVJXD_l6OWfc3QFUQpUwAfxi-yUQTjON"
+    },
+    "Policy": {
+        "min_relevance_threshold": 0.8,
+        "folder": "1pEAGYBFlrGraQCP6U0rdXiXkqIRIkKRV"
+    },
+    "Post-Election": {
+        "min_relevance_threshold": 0.8,
+        "folder": "13RoffSVCbipMN4oGohpphze09QQqc80X"
+    },
+    "Prop 2": {
+        "min_relevance_threshold": 0.8,
+        "folder": "1umNl9hPKv4h7mvejXNGfE0Wet4QvGOho"
+    },
+    "Residential Life": {
+        "min_relevance_threshold": 0.8,
+        "folder": "1rt4PaHb_R1KNSyT2vJP-Z1QH8WK66c7z"
+    },
+    "Safety": {
+        "min_relevance_threshold": 0.8,
+        "folder": "1dTxwhMjI-TdPLqN9bb3zbv-E7EIGYUWI"
+    },
+    "Sexual Misconduct": {
+        "min_relevance_threshold": 0.8,
+        "folder": "1cbHTP8Ezms-gwKk3GoiW0-nowtynDCCs"
+    },
+    "Succession Planning": {
+        "min_relevance_threshold": 0.8,
+        "folder": "1b-SBIgWhvlv6V-3mHKgkL1oMdVhk0XGx"
+    },
+    "Supply Chain": {
+        "min_relevance_threshold": 0.8,
+        "folder": "1CugjVDMMajuwzjuYwQ8jYk3TymGADSc-"
+    },
+    "Third Parties": {
+        "min_relevance_threshold": 0.8,
+        "folder": "1hNfYq0k2kdhh7MqgjwrnX_ZHZ6jzZ0f8"
+    },
+    "Title IX": {
+        "min_relevance_threshold": 0.8,
+        "folder": "16cM-8aFgoDg4Zf967aCKRzPQjU2n-ZKa"
+    },
+    "Weather": {
+        "min_relevance_threshold": 0.8,
+        "folder": "1Ue9wsxeZEAxH_dM4Z6mZiT78Ph_wyEll"
+    },
+    "Workforce Management": {
+        "min_relevance_threshold": 0.8,
+        "folder": "1MEW7dSgT4CBld3WqBcGFXsEkxQkHbLWD"
+    },
+    "Profiles": {
+        "min_relevance_threshold": 1.1,
+        "folder": ""
+    }
+}

@@ -3,8 +3,8 @@ from playwright.sync_api import sync_playwright
 import requests
 import uuid
 
-#from gdrive.api import authenticate_drive, upload_pdf_to_drive
 from gdrive.api import GoogleDriveService
+from shared.core_lib.db_utils import establish_connection, insert_articles
 
 def install_page_as_pdf(page, url, path, timeout_time, max_retry):
     for _ in range(max_retry):
@@ -34,16 +34,26 @@ def retrieve_page(pages_batch, browser):
         browser = p.chromium.connect_over_cdp(browser)
         page = browser.new_page()
 
+        gdrive = GoogleDriveService()
+        conn, cur = establish_connection()
+
         for url, category, _ in pages_batch:
-            install_filename = str(uuid.uuid4()).replace("-", "_")
-            install_filename = f"{category.replace(' ', '')}--{install_filename}"
+            category_name, category_folder = category
+            hyphened_category_name = category_name.replace(" ", "-")
 
-            install_page_as_pdf(page, url, f"/app/pages/{install_filename}.pdf", 5000, 2)
+            file_id = uuid.uuid4()
+            install_filename = str(file_id).replace("-", "_")
 
-            gdrive = GoogleDriveService()
-            gdrive.upload_file("1dR0baehnfs4-sctTxdYDriC9d-4lo1gL", f"{install_filename}.pdf", f"/app/pages/{install_filename}.pdf")
+            install_page_as_pdf(page, url, f"/app/pages/{hyphened_category_name}-{install_filename}.pdf", 5000, 2)
+
+            drive_file_id = gdrive.upload_file(category_folder, f"{install_filename}.pdf", f"/app/pages/{hyphened_category_name}-{install_filename}.pdf")
+
+            insert_articles(conn, cur, file_id, drive_file_id, url)
 
             print(f"INSTALLED {url} => {install_filename}.pdf")
+
+        cur.close()
+        conn.close()
 
         page.close()
         browser.close()
@@ -56,6 +66,7 @@ def retrieve_pdf(pages):
         return
     print("FETCHING")
     url, category, content = pages[0]
+    category_name, category_folder = category
 
     response = requests.get(url)
     status = response.status_code
@@ -63,12 +74,19 @@ def retrieve_pdf(pages):
         print(f"ERROR retrieving pdf from {url}")
         return None
 
-    install_filename = str(uuid.uuid4()).replace("-", "_")
-    install_filename = f"{category.replace(' ', '')}--{install_filename}"
+    file_id = uuid.uuid4()
+    install_filename = str(file_id).replace("-", "_")
+    hyphened_category_name = category_name.replace(" ", "-")
 
-    with open(f"/app/pages/{install_filename}.pdf", "wb") as f:
+    with open(f"/app/pages/{hyphened_category_name}-{install_filename}.pdf", "wb") as f:
         f.write(response.content)
 
     gdrive = GoogleDriveService()
-    gdrive.upload_file("1dR0baehnfs4-sctTxdYDriC9d-4lo1gL", f"{install_filename}.pdf", f"/app/pages/{install_filename}.pdf")
+    drive_file_id = gdrive.upload_file(category_folder, f"{install_filename}.pdf", f"/app/pages/{hyphened_category_name}-{install_filename}.pdf")
+
+    conn, cur = establish_connection()
+    insert_articles(conn, cur, file_id, drive_file_id, url)
+    cur.close()
+    conn.close()
+
     print("PDF successfully written")

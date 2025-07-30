@@ -2,13 +2,14 @@
 # from sqlalchemy.orm import sessionmaker
 # from shared.core_lib.models import engine, Article, Sources
 import uuid
+from datetime import datetime
 
 import psycopg2
 import os
 
-def seed_sources(conn, cursor):
-    query = "INSERT INTO sources (netloc, path, depth, target) VALUES (%s, %s, %s, %s)"
-    values = ("www.gallup.com", "/corporate/470660/reports-perspective-papers.aspx", 1, "website")
+def insert_articles(conn, cursor, article_id, drive_id, url):
+    query = "INSERT INTO articles (id, drive_id, url, creation_date, approved) VALUES (%s, %s, %s, %s, %s)"
+    values = (str(article_id), drive_id, url, datetime.now(), True)
 
     cursor.execute(query, values)
 
