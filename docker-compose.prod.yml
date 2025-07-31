@@ -55,8 +55,6 @@ services:
         condition: service_healthy
       django-migrations:
         condition: service_completed_successfully
-      alembic-migrations:
-        condition: service_completed_successfully
     restart: always
 
   celery_beat:
@@ -76,8 +74,6 @@ services:
       redis:
         condition: service_healthy
       django-migrations:
-        condition: service_completed_successfully
-      alembic-migrations:
         condition: service_completed_successfully
     restart: always
 
