@@ -30,7 +30,7 @@ services:
       "
     volumes:
       - ./web_scraper:/app
-      - ./shared/core_lib:/app/core_lib
+      - ./shared/core_lib:/app/shared/core_lib
     env_file:
       - ./.env
     environment:
