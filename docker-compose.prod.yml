@@ -80,7 +80,9 @@ services:
   # --- APPLICATION SERVICES ---
   schedule-api:
     build: ./backend
-    command: gunicorn core.wsgi:application --bind 0.0.0.0:8000
+    command: >
+      bash -c "python manage.py collectstatic --noinput &&
+               gunicorn core.wsgi:application --bind 0.0.0.0:8000"
     volumes:
       - ./backend:/app
       - ./shared:/app/shared
