@@ -13,8 +13,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-your-dev-secret-key-please-change-this-in-production')
 DEBUG = os.getenv('DJANGO_DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['schedule-api', '127.0.0.1', 'localhost'] # Only allow local access for this setup
-
+ALLOWED_HOSTS = ['schedule-api', '127.0.0.1', 'localhost', 'riskintel.miserver.it.umich.edu', '141.211.160.57']
 
 INSTALLED_APPS = [
     'django.contrib.admin',

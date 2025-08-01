@@ -83,12 +83,15 @@ services:
     command: gunicorn core.wsgi:application --bind 0.0.0.0:8000
     volumes:
       - ./backend:/app
+      - ./shared:/app/shared
       - ./web_scraper:/app/web_scraper
+      - ./scripts:/app/scripts
       - static_volume:/app/static
     env_file:
       - ./.env
     environment:
       - DJANGO_SETTINGS_MODULE=core.settings
+      - PYTHONPATH=/app 
     depends_on:
       postgres:
         condition: service_healthy
@@ -100,6 +103,8 @@ services:
     build: ./frontend
     volumes:
       - ./frontend:/app
+    environment:
+      - API_URL=http://schedule-api:8000/api
     depends_on:
       schedule-api:
         condition: service_started
@@ -115,9 +120,14 @@ services:
       - static_volume:/app/static:ro
       - certbot_certs:/etc/letsencrypt
       - certbot_webroot:/var/www/certbot
+      # for setup only, remove after initial setup
+      # - ./nginx/nginx-temp.conf:/etc/nginx/conf.d/nginx.conf  # Add this line temporarily
+
     depends_on:
-      - schedule-api
-      - streamlit-ui
+      schedule-api:
+        condition: service_started
+      streamlit-ui:
+        condition: service_started
     restart: always
 
   certbot:
