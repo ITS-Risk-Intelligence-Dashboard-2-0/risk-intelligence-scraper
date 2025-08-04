@@ -90,7 +90,9 @@ services:
 
   schedule-api:
     build: ./backend
-    command: gunicorn core.wsgi:application --bind 0.0.0.0:8000 --timeout 180
+    command: >
+      bash -c "python manage.py collectstatic --noinput &&
+               gunicorn core.wsgi:application --bind 0.0.0.0:8000"
     volumes:
       - ./backend:/app
       - ./web_scraper:/app/web_scraper

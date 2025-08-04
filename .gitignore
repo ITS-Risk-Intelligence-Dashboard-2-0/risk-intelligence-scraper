@@ -1,6 +1,7 @@
 .DS_Store
 pages/*
 shared/core_lib/*/migrations/*_initial.py
+backend/staticfiles/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
