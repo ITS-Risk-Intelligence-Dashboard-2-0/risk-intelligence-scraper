@@ -44,6 +44,18 @@ def retrieve_browser_link(browser):
         print(e)
         return None
 
+def wipe_folder(path):
+    for filename in os.listdir(path):
+        file_path = os.path.join(path, filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)  # remove file or symlink
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)  # remove directory and its contents
+        except Exception as e:
+            print(f'Failed to delete {file_path}: {e}')
+
+
 @shared_task(name="web_scraper.tasks.start_scraping_workflow")
 def start_scraping_workflow(sources_data):
     """
@@ -51,8 +63,7 @@ def start_scraping_workflow(sources_data):
     It chains the initial scrape with the main processing task.
     """
 
-    if os.path.exists("/app/pages"):
-        shutil.rmtree("/app/pages")
+    wipe_folder("/app/pages")
 
     browser_connection = retrieve_browser_link("browser")
     if browser_connection is None:

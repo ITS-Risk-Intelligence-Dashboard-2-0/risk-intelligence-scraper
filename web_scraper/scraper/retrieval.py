@@ -44,7 +44,9 @@ def retrieve_page(pages_batch, browser):
             file_id = uuid.uuid4()
             install_filename = str(file_id).replace("-", "_")
 
-            install_page_as_pdf(page, url, f"/app/pages/{hyphened_category_name}-{install_filename}.pdf", 5000, 2)
+            if not install_page_as_pdf(page, url, f"/app/pages/{hyphened_category_name}-{install_filename}.pdf", 5000, 2):
+                print("FAILED TO INSTALL PAGE!")
+                continue
 
             drive_file_id = gdrive.upload_file(category_folder, f"{install_filename}.pdf", f"/app/pages/{hyphened_category_name}-{install_filename}.pdf")
 

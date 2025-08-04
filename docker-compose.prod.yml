@@ -44,6 +44,8 @@ services:
       context: ./browser
       dockerfile: Dockerfile
     container_name: chromium-headless
+    logging:
+      driver: "none"
     ports:
       - "9222:9222"
 
